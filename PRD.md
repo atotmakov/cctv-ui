@@ -92,7 +92,7 @@ Users select a camera and a date (via date picker), and the app shows which time
 - [ ] Selecting multiple cameras and clicking playback button navigates to to multiple camera playback view.
 
 ### AC-2 — Playback
-- [ ] In multiple camera playback view cameras placed in vertical.
+- [ ] In multiple camera playback view cameras placed in a grid (2 columns for 2–4 cameras, 3 columns for 5–9, 4 columns for 10–16).
 - [ ] Video plays in browser without requiring plugins.
 - [ ] Scrubbing the timeline seeks to the correct position within ±2 seconds.
 - [ ] Transitions between adjacent recording files are seamless (auto-advance).
@@ -112,3 +112,10 @@ Users select a camera and a date (via date picker), and the app shows which time
 ### AC-5 — Performance
 - [ ] Grid view loads within 0.5 seconds on a local LAN.
 - [ ] Video begins playing immediately of selecting a time on the timeline, so it is necessary to cache video files after go to Playback mode.
+
+### AC-6 — Timeline control
+- [ ] All recordings for the selected time period are represented as intervals; the position and length of each interval correspond to the recording's start time and duration.
+- [ ] In multiple-camera mode each camera has its own labelled row of recording intervals on the timeline.
+- [ ] When the play button is pressed and the current position is in a gap, playback jumps to the nearest recording to the right.
+- [ ] The timeline supports zoom in / zoom out; zoomed view pans to keep the current-time cursor visible.
+- [ ] During playback the current-time cursor and time display update in real time as the video progresses.

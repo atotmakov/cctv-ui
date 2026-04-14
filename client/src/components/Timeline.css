@@ -1,0 +1,53 @@
+.timeline-outer {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.timeline-zoom-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-end;
+}
+
+.btn-zoom {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+.btn-zoom:hover:not(:disabled) { background: var(--border); }
+.btn-zoom:disabled { opacity: 0.3; cursor: default; }
+
+.zoom-label {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-dim);
+  min-width: 28px;
+  text-align: center;
+}
+
+.timeline-wrapper {
+  width: 100%;
+  /* height set inline from row count */
+  background: #111;
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+.timeline-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

@@ -1,0 +1,135 @@
+.playback-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.playback-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.btn-back {
+  color: var(--text-dim);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: color 0.15s;
+}
+.btn-back:hover { color: var(--text); }
+
+.playback-header-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.badge-caching {
+  font-size: 11px;
+  color: var(--accent);
+  background: rgba(59,130,246,0.15);
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(59,130,246,0.3);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.speed-bar {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-speed {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+.btn-speed:hover { color: var(--text); border-color: var(--text-dim); }
+.btn-speed.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Body ── */
+.playback-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.playback-state {
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: 48px;
+}
+
+.players-grid {
+  display: grid;
+  gap: 8px;
+  /* grid-template-columns set inline from camera count */
+}
+
+/* ── Footer ── */
+.playback-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-playpause {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.btn-playpause:hover { background: var(--accent-hov); }
+
+.time-display {
+  font-family: monospace;
+  font-size: 14px;
+  color: var(--text);
+  letter-spacing: 0.05em;
+}
+
+.no-recordings {
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
+  padding: 8px 0;
+}

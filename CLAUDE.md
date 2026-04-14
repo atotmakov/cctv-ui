@@ -36,31 +36,49 @@ See `PRD.md` for the full product requirements document.
 
 ```
 cctv-ui/
-├── PRD.md                        # Product requirements (source of truth)
-├── CLAUDE.md                     # This file
-├── .env                          # SMB credentials and config (never commit)
-├── video_example/                # Sample SMB share data for development
-│   └── axis-00408CE298CD/        # One folder per camera (named by device ID)
-│       ├── index.db              # SQLite DB: one row per recording file
-│       ├── 20260406/             # Date folder (YYYYMMDD)
-│       │   └── 18/               # Hour folder (HH)
-│       │       └── <RecordingToken>/
-│       │           ├── recording.xml   # Recording metadata (starttime, stoptime, resolution, etc.)
-│       │           └── 20260406_18     # Raw video file (no extension, H.264/MKV)
-├── server/                       # Node.js + Express backend (to be created)
-│   ├── index.js                  # Entry point
-│   ├── routes/                   # Express route handlers
-│   ├── services/                 # SMB, SQLite, video serving logic
-│   └── config.js                 # Reads .env, exports config
-└── client/                       # React frontend (to be created)
-    ├── public/
+├── PRD.md
+├── CLAUDE.md
+├── package.json              # npm workspaces root; runs both server + client
+├── .env                      # local config (never committed)
+├── .env.example
+├── .gitignore
+├── video_example/            # Sample SMB share data for dev
+│   └── axis-00408CE298CD/
+│       ├── index.db          # SQLite DB (one row per recording)
+│       └── YYYYMMDD/
+│           └── HH/
+│               └── <RecordingToken>/
+│                   ├── recording.xml       # Recording-level metadata
+│                   └── YYYYMMDD_HH/        # Block directory
+│                       ├── <BlockToken>.mkv    # Actual H.264/MKV video
+│                       └── <BlockToken>.xml    # Block-level metadata
+├── server/
+│   ├── package.json
+│   ├── index.js              # Express entry point
+│   ├── config.js             # Reads .env, exports typed config
+│   ├── routes/
+│   │   ├── cameras.js        # GET /cameras, /cameras/:id/dates, /recordings, POST /cache
+│   │   └── video.js          # GET /video/:cameraId/* (HTTP range support)
+│   └── services/
+│       ├── storageService.js # Filesystem helpers (listCameras, findVideoRelPath, …)
+│       ├── xmlService.js     # recording.xml parser + date scanner
+│       └── dbService.js      # node:sqlite reader (falls back gracefully)
+└── client/
+    ├── package.json
+    ├── vite.config.js        # Vite + React; proxies /api → :3000
+    ├── index.html
     └── src/
-        ├── App.jsx
-        ├── components/
-        │   ├── CameraGrid.jsx    # UC-1: multi-camera dashboard
-        │   ├── PlaybackView.jsx  # UC-2: single/multi-camera playback
-        │   └── Timeline.jsx      # Horizontal scrubber component
-        └── pages/
+        ├── main.jsx
+        ├── App.jsx           # React Router: / → CameraGrid, /playback/:ids → PlaybackView
+        ├── index.css         # Global dark theme variables
+        ├── api/
+        │   └── client.js     # fetch wrappers for all API endpoints
+        └── components/
+            ├── CameraGrid.jsx / .css    # UC-1 grid with multi-select
+            ├── CameraCard.jsx           # Single camera tile
+            ├── PlaybackView.jsx / .css  # UC-2/3 date picker + players + timeline
+            ├── VideoPlayer.jsx / .css   # HTML5 <video> with seek + auto-advance
+            └── Timeline.jsx / .css      # Canvas scrubber (24h, recording segments)
 ```
 
 ---
@@ -111,26 +129,26 @@ Schema to be confirmed by reading the actual DB. Expected columns: filename, pat
 ## Key Commands
 
 ```bash
-# Install dependencies (run from repo root after scaffolding)
-npm install
+# Install all dependencies (run once from repo root)
+npm install               # installs root + server + client workspaces
 
-# Start development server (backend + frontend with hot reload)
-npm run dev
+# Start both server and client with hot reload
+npm run dev               # server on :3000, client on :5173 (via Vite proxy)
 
-# Start backend only
+# Start backend only  (Node 22 --experimental-sqlite flag included)
 npm run server
 
 # Start frontend only
 npm run client
 
-# Run tests
-npm test
-
 # Build frontend for production
 npm run build
+
+# Run tests
+npm test
 ```
 
-> Commands above are the intended convention — update this section once `package.json` scripts are defined.
+> The Vite dev server proxies `/api/*` to `http://localhost:3000` so there is no CORS issue during development.
 
 ---
 
