@@ -92,7 +92,7 @@ Users select a camera and a date (via date picker), and the app shows which time
 - [ ] Selecting multiple cameras and clicking playback button navigates to to multiple camera playback view.
 
 ### AC-2 — Playback
-- [ ] In multiple camera playback view cameras placed in a grid (2 columns for 2–4 cameras, 3 columns for 5–9, 4 columns for 10–16).
+- [ ] In multiple camera playback view cameras placed in a grid (2 columns for 2–4 cameras, 3 columns for 5–9, 4 columns for 10–16). The grid is always sized to its maximum dimensions based on the camera count — cells never collapse or resize when a camera has no recording at the current time position (a placeholder is shown instead). This prevents layout shifts during continuous playback across day boundaries or gaps.
 - [ ] Video plays in browser without requiring plugins.
 - [ ] Scrubbing the timeline seeks to the correct position within ±2 seconds.
 - [ ] Transitions between adjacent recording files are seamless (auto-advance).
