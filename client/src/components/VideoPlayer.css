@@ -5,6 +5,9 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
+  /* Fill the grid row — all cells in the same row share equal height,
+     so layout never shifts when a camera has no recording at current time. */
+  min-height: 0;
 }
 
 .video-label {
@@ -22,7 +25,8 @@
 .video-player video {
   display: block;
   width: 100%;
-  max-height: 400px;
+  flex: 1;
+  min-height: 0;
   background: #000;
   object-fit: contain;
 }
@@ -31,7 +35,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 180px;
+  flex: 1;
   color: var(--text-dim);
   font-size: 13px;
 }

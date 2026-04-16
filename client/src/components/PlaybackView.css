@@ -72,7 +72,8 @@
 /* ── Body ── */
 .playback-body {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
   padding: 16px 20px;
 }
 
@@ -85,6 +86,8 @@
 .players-grid {
   display: grid;
   gap: 8px;
+  height: 100%;
+  grid-auto-rows: 1fr;
   /* grid-template-columns set inline from camera count */
 }
 
