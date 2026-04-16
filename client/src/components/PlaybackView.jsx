@@ -210,7 +210,7 @@ export default function PlaybackView() {
           </button>
           <span className="time-display">
             {displayTime
-              ? new Date(displayTime).toISOString().slice(11, 19) + ' UTC'
+              ? new Date(displayTime).toISOString().slice(11, 21) + ' UTC'
               : '–'}
           </span>
         </div>
