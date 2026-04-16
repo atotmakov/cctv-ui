@@ -23,6 +23,5 @@ export default {
     share: process.env.SMB_SHARE,
     username: process.env.SMB_USERNAME,
     password: process.env.SMB_PASSWORD,
-    domain: process.env.SMB_DOMAIN || 'WORKGROUP',
   },
 };
