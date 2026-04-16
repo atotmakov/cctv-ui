@@ -97,7 +97,7 @@ Users select a camera and a date (via date picker), and the app shows which time
 - [ ] Scrubbing the timeline seeks to the correct position within ±2 seconds.
 - [ ] Transitions between adjacent recording files are seamless (auto-advance).
 - [ ] Gaps in recordings are visually distinct on the timeline (grey/empty segment).
-- [ ] Playback controls: play/pause, speed (0.5×, 1×, 2×, 4×).
+- [ ] Playback controls: play/pause, speed (0.5×, 1×, 2×, 4×, 8×).
 
 ### AC-3 — Search
 - [ ] User can pick any camera and any date via date picker.

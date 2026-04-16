@@ -17,7 +17,7 @@ function todayYMD() {
   return new Date().toISOString().slice(0, 10).replace(/-/g, '');
 }
 
-const SPEEDS = [0.5, 1, 2, 4];
+const SPEEDS = [0.5, 1, 2, 4, 8];
 
 export default function PlaybackView() {
   const { cameraIds } = useParams();

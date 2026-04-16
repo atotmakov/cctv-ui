@@ -170,6 +170,6 @@ PORT=3000
 - Video must begin playing **immediately** after selecting a timeline position — pre-cache video files on Playback entry
 - Timeline scrubbing accuracy: **±2 seconds**
 - Support **1–16 cameras** in grid view
-- Playback speeds: **0.5×, 1×, 2×, 4×**
+- Playback speeds: **0.5×, 1×, 2×, 4×, 8×**
 - Multi-camera playback: cameras stacked **vertically**
 - Gaps in recordings shown as **grey/empty segments** on the timeline
