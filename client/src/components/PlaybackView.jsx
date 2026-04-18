@@ -17,6 +17,15 @@ function todayYMD() {
   return new Date().toISOString().slice(0, 10).replace(/-/g, '');
 }
 
+function formatLocalTime(iso) {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  const m  = String(d.getMilliseconds()).charAt(0);
+  return `${hh}:${mm}:${ss}.${m}`;
+}
+
 const SPEEDS = [0.5, 1, 2, 4, 8];
 
 export default function PlaybackView() {
@@ -209,9 +218,7 @@ export default function PlaybackView() {
             {playing ? '⏸' : '▶'}
           </button>
           <span className="time-display">
-            {displayTime
-              ? new Date(displayTime).toISOString().slice(11, 21) + ' UTC'
-              : '–'}
+            {displayTime ? formatLocalTime(displayTime) : '–'}
           </span>
         </div>
 
