@@ -7,4 +7,4 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // Must be set before config.js is imported anywhere — vitest setupFiles
 // run in the worker process before test files load their modules.
 process.env.STORAGE_TYPE = 'local';
-process.env.STORAGE_PATH = path.resolve(__dirname, '..', '..', 'video_example');
+process.env.STORAGE_PATH = path.resolve(__dirname, 'fixtures');

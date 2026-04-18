@@ -2,13 +2,12 @@ import { describe, it, expect } from 'vitest';
 import path from 'path';
 import { listCameras, listDates, findVideoRelPath, cameraPath, dbPath } from '../services/storageService.js';
 
-const CAM = 'axis-00408CE298CD';
+const CAM = 'test-cam';
 
 // ── AC-1: listCameras ─────────────────────────────────────────────────────────
 describe('listCameras (AC-1)', () => {
   it('returns at least one camera from fixture storage', async () => {
     const cameras = await listCameras();
-    expect(Array.isArray(cameras)).toBe(true);
     expect(cameras.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -24,15 +23,14 @@ describe('listCameras (AC-1)', () => {
 describe('listDates (AC-3)', () => {
   it('returns dates in YYYYMMDD format', async () => {
     const dates = await listDates(CAM);
-    expect(dates.length).toBeGreaterThanOrEqual(3);
+    expect(dates.length).toBeGreaterThanOrEqual(2);
     dates.forEach(d => expect(d).toMatch(/^\d{8}$/));
   });
 
-  it('returns sorted dates containing 20260406, 20260407, 20260408', async () => {
+  it('returns sorted dates containing 20260406 and 20260407', async () => {
     const dates = await listDates(CAM);
     expect(dates).toContain('20260406');
     expect(dates).toContain('20260407');
-    expect(dates).toContain('20260408');
     for (let i = 1; i < dates.length; i++) {
       expect(dates[i - 1] <= dates[i]).toBe(true);
     }
@@ -47,27 +45,23 @@ describe('listDates (AC-3)', () => {
 describe('findVideoRelPath', () => {
   it('returns the correct relative path for a known recording block', async () => {
     const relPath = await findVideoRelPath(
-      CAM, '20260406', '18',
-      '20260406_183625_0D88_00408CE298CD',
+      CAM, '20260406', '18', '20260406_183625_TOK1',
     );
     expect(relPath).not.toBeNull();
-    expect(relPath).toMatch(/\.mkv$/);
     expect(relPath).toBe(
-      '20260406/18/20260406_183625_0D88_00408CE298CD/20260406_18/20260406_183625_69F9_00408CE298CD.mkv',
+      '20260406/18/20260406_183625_TOK1/20260406_18/20260406_183625_BLOCK1.mkv',
     );
   });
 
   it('returns null for a nonexistent token directory', async () => {
-    const relPath = await findVideoRelPath(CAM, '20260406', '18', 'no-token');
-    expect(relPath).toBeNull();
+    expect(await findVideoRelPath(CAM, '20260406', '18', 'no-token')).toBeNull();
   });
 });
 
 // ── path helpers ──────────────────────────────────────────────────────────────
 describe('cameraPath / dbPath', () => {
   it('cameraPath ends with the camera id', () => {
-    const p = cameraPath(CAM);
-    expect(path.basename(p)).toBe(CAM);
+    expect(path.basename(cameraPath(CAM))).toBe(CAM);
   });
 
   it('dbPath ends with index.db inside the camera folder', () => {

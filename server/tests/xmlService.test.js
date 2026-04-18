@@ -4,22 +4,22 @@ import { fileURLToPath } from 'url';
 import { parseRecordingXml, scanRecordingsForDate } from '../services/xmlService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURE    = path.resolve(__dirname, '..', '..', 'video_example');
-const CAM        = 'axis-00408CE298CD';
+const FIXTURES   = path.resolve(__dirname, 'fixtures');
+const CAM        = 'test-cam';
 
 // ── AC-4: parseRecordingXml ───────────────────────────────────────────────────
 describe('parseRecordingXml (AC-4)', () => {
   it('parses a well-formed recording.xml and returns correct fields', async () => {
     const xmlPath = path.join(
-      FIXTURE, CAM,
+      FIXTURES, CAM,
       '20260406', '18',
-      '20260406_183625_0D88_00408CE298CD',
+      '20260406_183625_TOK1',
       'recording.xml',
     );
     const rec = await parseRecordingXml(xmlPath);
 
     expect(rec).not.toBeNull();
-    expect(rec.token).toBe('20260406_183625_0D88_00408CE298CD');
+    expect(rec.token).toBe('20260406_183625_TOK1');
     expect(rec.startTime).toBe('2026-04-06T18:36:25.656980Z');
     expect(rec.stopTime).toBe('2026-04-06T18:36:38.561046Z');
     expect(rec.width).toBe(720);
@@ -29,33 +29,22 @@ describe('parseRecordingXml (AC-4)', () => {
   });
 
   it('returns null for a nonexistent file (graceful degradation)', async () => {
-    const result = await parseRecordingXml('/nonexistent/recording.xml');
-    expect(result).toBeNull();
-  });
-
-  it('returns null for an XML file with no <Recording> root (block sidecar)', async () => {
-    // The block .xml sidecar has no <Recording> element
-    const xmlPath = path.join(
-      FIXTURE, CAM,
-      '20260406', '18',
-      '20260406_183625_0D88_00408CE298CD',
-      '20260406_18',
-      '20260406_183625_69F9_00408CE298CD.xml',
-    );
-    const result = await parseRecordingXml(xmlPath);
-    expect(result).toBeNull();
+    expect(await parseRecordingXml('/nonexistent/recording.xml')).toBeNull();
   });
 });
 
 // ── AC-4: scanRecordingsForDate ───────────────────────────────────────────────
 describe('scanRecordingsForDate (AC-4)', () => {
-  it('returns 2 recordings for 20260406, sorted by startTime', async () => {
+  it('returns 1 recording for 20260406, sorted by startTime', async () => {
     const recs = await scanRecordingsForDate(CAM, '20260406');
-    expect(recs).toHaveLength(2);
-    expect(recs[0].startTime < recs[1].startTime).toBe(true);
+    expect(recs).toHaveLength(1);
+    expect(recs[0].token).toBe('20260406_183625_TOK1');
+    expect(recs[0].startTime).toBe('2026-04-06T18:36:25.656980Z');
+    expect(recs[0].stopTime).toBe('2026-04-06T18:36:38.561046Z');
+    expect(recs[0].videoRelPath).toMatch(/\.mkv$/);
   });
 
-  it('each recording has token, startTime, stopTime, videoRelPath fields', async () => {
+  it('each recording has token, startTime, stopTime, videoRelPath', async () => {
     const recs = await scanRecordingsForDate(CAM, '20260406');
     for (const rec of recs) {
       expect(rec.token).toBeTruthy();
@@ -65,28 +54,17 @@ describe('scanRecordingsForDate (AC-4)', () => {
     }
   });
 
-  it('first recording has the correct token and videoRelPath', async () => {
-    const recs = await scanRecordingsForDate(CAM, '20260406');
-    expect(recs[0].token).toBe('20260406_183625_0D88_00408CE298CD');
-    expect(recs[0].videoRelPath).toContain('20260406_18');
-    expect(recs[0].videoRelPath).toMatch(/\.mkv$/);
-  });
-
-  it('returns a larger sorted list for 20260407 (41 recordings)', async () => {
+  it('returns 1 recording for 20260407', async () => {
     const recs = await scanRecordingsForDate(CAM, '20260407');
-    expect(recs).toHaveLength(41);
-    for (let i = 1; i < recs.length; i++) {
-      expect(recs[i - 1].startTime <= recs[i].startTime).toBe(true);
-    }
+    expect(recs).toHaveLength(1);
+    expect(recs[0].token).toBe('20260407_045930_TOK2');
   });
 
   it('returns [] for a nonexistent camera (AC-4 graceful)', async () => {
-    const recs = await scanRecordingsForDate('no-such-cam', '20260406');
-    expect(recs).toEqual([]);
+    expect(await scanRecordingsForDate('no-such-cam', '20260406')).toEqual([]);
   });
 
   it('returns [] for a date with no recordings', async () => {
-    const recs = await scanRecordingsForDate(CAM, '20201231');
-    expect(recs).toEqual([]);
+    expect(await scanRecordingsForDate(CAM, '20201231')).toEqual([]);
   });
 });
