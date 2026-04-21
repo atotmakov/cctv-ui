@@ -1,9 +1,13 @@
 import { execSync } from 'child_process';
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import config from './config.js';
 import camerasRouter from './routes/cameras.js';
 import videoRouter from './routes/video.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── SMB authentication (Windows only) ────────────────────────────────────────
 // Authenticates the Node process against the SMB share so all subsequent
@@ -37,6 +41,13 @@ app.use('/api/cameras', camerasRouter);
 app.use('/api/video', videoRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// ── Serve built React app in production ───────────────────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  const distPath = path.join(__dirname, '..', 'client', 'dist');
+  app.use(express.static(distPath));
+  app.get('*', (_req, res) => res.sendFile(path.join(distPath, 'index.html')));
+}
 
 app.listen(config.port, () => {
   console.log(`[server] http://localhost:${config.port}`);

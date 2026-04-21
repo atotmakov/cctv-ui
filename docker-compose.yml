@@ -1,0 +1,16 @@
+services:
+  cctv-ui:
+    build: .
+    container_name: cctv-ui
+    ports:
+      - "8888:3000"
+    volumes:
+      # Mount your NAS recording share read-only.
+      # Change /volume1/cctv to the actual path on your NAS.
+      - /volume1/cctv:/recordings:ro
+    environment:
+      - NODE_ENV=production
+      - STORAGE_TYPE=local
+      - STORAGE_PATH=/recordings
+      - PORT=3000
+    restart: unless-stopped
