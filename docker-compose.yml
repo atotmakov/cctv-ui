@@ -1,6 +1,6 @@
 services:
   cctv-ui:
-    build: .
+    image: cctv-ui
     container_name: cctv-ui
     ports:
       - "8888:3000"
