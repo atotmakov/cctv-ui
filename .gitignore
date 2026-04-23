@@ -5,3 +5,4 @@ dist/
 *.local
 .claude/
 video_example/
+*.tar.gz
