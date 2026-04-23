@@ -1,6 +1,6 @@
 services:
   cctv-ui:
-    image: cctv-ui
+    image: ghcr.io/atotmakov/cctv-ui:latest
     container_name: cctv-ui
     ports:
       - "8888:3000"
