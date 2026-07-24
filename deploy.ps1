@@ -87,7 +87,7 @@ echo '  -> Starting container...'
 sudo docker compose up -d --remove-orphans
 sudo docker compose ps
 "@
-($remoteScript -replace "`r`n", "`n") | & $sshBin @SshOpts "${NasUser}@${NasHost}" bash
+($remoteScript -replace "`r", "") | & $sshBin @SshOpts "${NasUser}@${NasHost}" bash
 if ($LASTEXITCODE -ne 0) { throw "Remote deploy failed" }
 
 # ── Step 4: Clean up local archive ───────────────────────────────────────────
