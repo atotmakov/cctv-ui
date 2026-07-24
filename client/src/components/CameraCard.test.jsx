@@ -82,4 +82,34 @@ describe('CameraCard', () => {
     await waitFor(() => expect(container.querySelector('.card-thumb-video')).toBeInTheDocument());
     expect(container.querySelector('.card-thumb svg')).toBeNull();
   });
+
+  it('shows no age badge when there is no latest recording', async () => {
+    getLatestRecording.mockResolvedValue(null);
+    const { container } = render(
+      <CameraCard camera={cam} selected={false} onSelect={vi.fn()} onOpen={vi.fn()} />,
+    );
+    await screen.findByText('Front Door');
+    expect(container.querySelector('.thumb-age-badge')).toBeNull();
+  });
+
+  it('shows "Xm ago" age badge based on the latest recording\'s stop time', async () => {
+    const stopTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    getLatestRecording.mockResolvedValue({ videoRelPath: null, stopTime });
+    render(<CameraCard camera={cam} selected={false} onSelect={vi.fn()} onOpen={vi.fn()} />);
+    expect(await screen.findByText('5m ago')).toBeInTheDocument();
+  });
+
+  it('shows "just now" for a recording that stopped under a minute ago', async () => {
+    const stopTime = new Date(Date.now() - 10 * 1000).toISOString();
+    getLatestRecording.mockResolvedValue({ videoRelPath: null, stopTime });
+    render(<CameraCard camera={cam} selected={false} onSelect={vi.fn()} onOpen={vi.fn()} />);
+    expect(await screen.findByText('just now')).toBeInTheDocument();
+  });
+
+  it('shows "Xd ago" for a recording several days old', async () => {
+    const stopTime = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    getLatestRecording.mockResolvedValue({ videoRelPath: null, stopTime });
+    render(<CameraCard camera={cam} selected={false} onSelect={vi.fn()} onOpen={vi.fn()} />);
+    expect(await screen.findByText('3d ago')).toBeInTheDocument();
+  });
 });

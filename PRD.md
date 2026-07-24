@@ -87,9 +87,10 @@ Users select a camera and a date (via date picker), and the app shows which time
 
 ### AC-1 — Grid view
 - [x] All founded cameras are listed with name and a representative still or placeholder. The still is a frame from the camera's most recent recording (decoded client-side from the video file); a placeholder icon is shown if the camera has no recordings yet.
-- [ ] Grid renders correctly for 1–16 cameras.
-- [ ] Clicking a camera navigates to its playback view.
-- [ ] Selecting multiple cameras and clicking playback button navigates to to multiple camera playback view.
+- [x] Each camera's card also shows how long ago its latest recording ended (e.g. "5m ago", "3h ago", "2d ago"), updated live while the grid is open.
+- [x] Grid renders correctly for 1–16 cameras.
+- [x] Clicking a camera navigates to its playback view.
+- [x] Selecting multiple cameras and clicking playback button navigates to to multiple camera playback view.
 
 ### AC-2 — Playback
 - [ ] In multiple camera playback view cameras placed in a grid (2 columns for 2–4 cameras, 3 columns for 5–9, 4 columns for 10–16). The grid is always sized to its maximum dimensions based on the camera count — cells never collapse or resize when a camera has no recording at the current time position (a placeholder is shown instead). This prevents layout shifts during continuous playback across day boundaries or gaps.
