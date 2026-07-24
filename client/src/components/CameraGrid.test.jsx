@@ -4,11 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../api/client.js', () => ({
-  getCameras:     vi.fn(),
-  getCameraDates: vi.fn(),
-  getRecordings:  vi.fn(),
-  triggerCache:   vi.fn(),
-  videoUrl:       vi.fn(),
+  getCameras:         vi.fn(),
+  getCameraDates:     vi.fn(),
+  getRecordings:      vi.fn(),
+  triggerCache:       vi.fn(),
+  getLatestRecording: vi.fn().mockResolvedValue(null),
+  videoUrl:           vi.fn(),
 }));
 
 const mockNavigate = vi.fn();

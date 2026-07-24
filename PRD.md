@@ -1,7 +1,7 @@
 # PRD — CCTV recording viewer
 
 ## Status: draft v0.1
-## Last updated: 2026-04-09
+## Last updated: 2026-07-24
 
 ---
 
@@ -86,7 +86,7 @@ Users select a camera and a date (via date picker), and the app shows which time
 ## 7. Acceptance criteria
 
 ### AC-1 — Grid view
-- [ ] All founded cameras are listed with name and a representative still or placeholder.
+- [x] All founded cameras are listed with name and a representative still or placeholder. The still is a frame from the camera's most recent recording (decoded client-side from the video file); a placeholder icon is shown if the camera has no recordings yet.
 - [ ] Grid renders correctly for 1–16 cameras.
 - [ ] Clicking a camera navigates to its playback view.
 - [ ] Selecting multiple cameras and clicking playback button navigates to to multiple camera playback view.

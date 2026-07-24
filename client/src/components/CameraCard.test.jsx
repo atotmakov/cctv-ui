@@ -1,6 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+
+vi.mock('../api/client.js', () => ({
+  getLatestRecording: vi.fn().mockResolvedValue(null),
+  videoUrl:           vi.fn(),
+}));
+
+import { getLatestRecording, videoUrl } from '../api/client.js';
 import CameraCard from './CameraCard.jsx';
 
 const cam = { id: 'front-door', name: 'Front Door' };
@@ -54,5 +61,25 @@ describe('CameraCard', () => {
     render(<CameraCard camera={cam} selected={false} onSelect={vi.fn()} onOpen={onOpen} />);
     await userEvent.click(screen.getByRole('checkbox'));
     expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('shows the placeholder icon while no recording thumbnail is available', async () => {
+    getLatestRecording.mockResolvedValue(null);
+    const { container } = render(
+      <CameraCard camera={cam} selected={false} onSelect={vi.fn()} onOpen={vi.fn()} />,
+    );
+    await screen.findByText('Front Door');
+    expect(container.querySelector('.card-thumb svg')).toBeInTheDocument();
+    expect(container.querySelector('.card-thumb-video')).toBeNull();
+  });
+
+  it('shows a video thumbnail once the latest recording resolves', async () => {
+    getLatestRecording.mockResolvedValue({ videoRelPath: '20260406/18/TOK1/20260406_18/block.mkv' });
+    videoUrl.mockReturnValue('/api/video/front-door/20260406/18/TOK1/20260406_18/block.mkv');
+    const { container } = render(
+      <CameraCard camera={cam} selected={false} onSelect={vi.fn()} onOpen={vi.fn()} />,
+    );
+    await waitFor(() => expect(container.querySelector('.card-thumb-video')).toBeInTheDocument());
+    expect(container.querySelector('.card-thumb svg')).toBeNull();
   });
 });

@@ -5,6 +5,20 @@ import { listCameras, listDates, cameraPath } from '../services/storageService.j
 import { getRecordingsForDate, getAvailableDates } from '../services/dbService.js';
 import { scanRecordingsForDate } from '../services/xmlService.js';
 
+// Find the most recent recording (with a resolvable video file) for a
+// camera, scanning backwards from the most recent date until one is found.
+async function findLatestRecording(cameraId) {
+  const dbDates = getAvailableDates(cameraId);
+  const dates = dbDates ?? await listDates(cameraId);
+
+  for (let i = dates.length - 1; i >= 0; i--) {
+    const recordings = await scanRecordingsForDate(cameraId, dates[i]);
+    const withVideo = recordings.filter(r => r.videoRelPath);
+    if (withVideo.length > 0) return withVideo[withVideo.length - 1];
+  }
+  return null;
+}
+
 const router = Router();
 
 // GET /api/cameras
@@ -30,6 +44,19 @@ router.get('/:id/dates', async (req, res) => {
   } catch (err) {
     console.error(`[cameras] listDates ${id}:`, err);
     res.status(500).json({ error: 'Failed to list dates' });
+  }
+});
+
+// GET /api/cameras/:id/latest-recording
+// Returns the most recent recording (for use as a card thumbnail), or null.
+router.get('/:id/latest-recording', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const recording = await findLatestRecording(id);
+    res.json(recording);
+  } catch (err) {
+    console.error(`[cameras] latestRecording ${id}:`, err);
+    res.status(500).json({ error: 'Failed to get latest recording' });
   }
 });
 

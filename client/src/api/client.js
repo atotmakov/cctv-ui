@@ -17,6 +17,9 @@ export const getCameraDates = (cameraId) =>
 export const getRecordings = (cameraId, date) =>
   fetch(`${BASE}/cameras/${encodeURIComponent(cameraId)}/recordings?date=${date}`).then(json);
 
+export const getLatestRecording = (cameraId) =>
+  fetch(`${BASE}/cameras/${encodeURIComponent(cameraId)}/latest-recording`).then(json);
+
 export const triggerCache = (cameraId, date) =>
   fetch(`${BASE}/cameras/${encodeURIComponent(cameraId)}/cache?date=${date}`, {
     method: 'POST',

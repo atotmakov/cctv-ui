@@ -49,6 +49,23 @@ describe('GET /api/cameras/:id/dates (AC-3)', () => {
   });
 });
 
+// GET /api/cameras/:id/latest-recording ──────────────────────────────────────
+describe('GET /api/cameras/:id/latest-recording', () => {
+  it('returns the recording from the most recent date with video', async () => {
+    const res = await request(app).get(`/api/cameras/${CAM}/latest-recording`);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('videoRelPath');
+    expect(res.body.videoRelPath).toMatch(/\.mkv$/);
+    expect(res.body.startTime).toMatch(/^2026-04-07T/);
+  });
+
+  it('returns 500 for a completely nonexistent camera (matches /dates precedent)', async () => {
+    const res = await request(app).get('/api/cameras/no-such-camera/latest-recording');
+    expect(res.status).toBe(500);
+    expect(res.body).toHaveProperty('error');
+  });
+});
+
 // ── AC-4: GET /api/cameras/:id/recordings ────────────────────────────────────
 describe('GET /api/cameras/:id/recordings (AC-4)', () => {
   it('returns 400 when date param is missing', async () => {
