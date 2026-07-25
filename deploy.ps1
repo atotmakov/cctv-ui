@@ -45,6 +45,26 @@ function Send-FileViaSsh {
     if ($proc.ExitCode -ne 0) { throw "SSH transfer failed for $LocalPath" }
 }
 
+# Run a multi-line bash script on the remote host via SSH stdin, writing raw
+# UTF-8 bytes directly to the child process's stdin stream. Piping a
+# PowerShell string through `|` to a native command re-serializes it and
+# reintroduces `\r\n` line endings even after stripping `\r` from the
+# source string — writing to BaseStream bypasses that entirely.
+function Invoke-RemoteScript {
+    param([string]$Script)
+    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
+    $startInfo.FileName = $sshBin
+    $startInfo.Arguments = ($SshOpts + @("${NasUser}@${NasHost}", "bash")) -join ' '
+    $startInfo.RedirectStandardInput = $true
+    $startInfo.UseShellExecute = $false
+    $proc = [System.Diagnostics.Process]::Start($startInfo)
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes(($Script -replace "`r`n", "`n"))
+    $proc.StandardInput.BaseStream.Write($bytes, 0, $bytes.Length)
+    $proc.StandardInput.Close()
+    $proc.WaitForExit()
+    return $proc.ExitCode
+}
+
 # ── Install crane if not present ──────────────────────────────────────────────
 $craneDir = "$env:LOCALAPPDATA\crane"
 $craneBin = "$craneDir\crane.exe"
@@ -87,8 +107,8 @@ echo '  -> Starting container...'
 sudo docker compose up -d --remove-orphans
 sudo docker compose ps
 "@
-($remoteScript -replace "`r", "") | & $sshBin @SshOpts "${NasUser}@${NasHost}" bash
-if ($LASTEXITCODE -ne 0) { throw "Remote deploy failed" }
+$exitCode = Invoke-RemoteScript -Script $remoteScript
+if ($exitCode -ne 0) { throw "Remote deploy failed" }
 
 # ── Step 4: Clean up local archive ───────────────────────────────────────────
 Write-Host "==> Cleaning up local archive..."
