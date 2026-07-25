@@ -11,6 +11,9 @@ async function json(res) {
 export const getCameras = () =>
   fetch(`${BASE}/cameras`).then(json);
 
+export const getVersion = () =>
+  fetch(`${BASE}/version`).then(json);
+
 export const getCameraDates = (cameraId) =>
   fetch(`${BASE}/cameras/${encodeURIComponent(cameraId)}/dates`).then(json);
 

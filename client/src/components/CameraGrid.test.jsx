@@ -9,6 +9,7 @@ vi.mock('../api/client.js', () => ({
   getRecordings:      vi.fn(),
   triggerCache:       vi.fn(),
   getLatestRecording: vi.fn().mockResolvedValue(null),
+  getVersion:         vi.fn().mockResolvedValue({ version: '0.2.0' }),
   videoUrl:           vi.fn(),
 }));
 
@@ -18,7 +19,7 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate };
 });
 
-import { getCameras } from '../api/client.js';
+import { getCameras, getVersion } from '../api/client.js';
 import CameraGrid from './CameraGrid.jsx';
 
 function renderGrid() {
@@ -49,6 +50,23 @@ describe('CameraGrid — states', () => {
     getCameras.mockResolvedValue([]);
     renderGrid();
     await waitFor(() => expect(screen.getByText(/no cameras found/i)).toBeInTheDocument());
+  });
+});
+
+// ── UC-4: app version visible on the grid view ───────────────────────────────
+describe('CameraGrid — UC-4: version visibility', () => {
+  it('shows the app version once fetched', async () => {
+    getCameras.mockResolvedValue([]);
+    getVersion.mockResolvedValue({ version: '1.2.3' });
+    renderGrid();
+    await waitFor(() => expect(screen.getByText('v1.2.3')).toBeInTheDocument());
+  });
+
+  it('does not render a version badge while it has not loaded yet', () => {
+    getCameras.mockResolvedValue([]);
+    getVersion.mockReturnValue(new Promise(() => {}));
+    renderGrid();
+    expect(screen.queryByText(/^v\d/)).not.toBeInTheDocument();
   });
 });
 

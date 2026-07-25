@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCameras } from '../api/client.js';
+import { getCameras, getVersion } from '../api/client.js';
 import CameraCard from './CameraCard.jsx';
 import './CameraGrid.css';
 
 export default function CameraGrid() {
   const [cameras, setCameras] = useState([]);
+  const [version, setVersion] = useState(null);
   const [selected, setSelected] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,6 +17,12 @@ export default function CameraGrid() {
       .then(setCameras)
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    getVersion()
+      .then(({ version }) => setVersion(version))
+      .catch(() => {});
   }, []);
 
   function toggleSelect(id) {
@@ -41,7 +48,10 @@ export default function CameraGrid() {
   return (
     <div className="grid-page">
       <header className="grid-header">
-        <h1>CCTV Viewer</h1>
+        <h1>
+          CCTV Viewer
+          {version && <span className="version-badge">v{version}</span>}
+        </h1>
         <button
           className="btn-primary"
           disabled={selected.size === 0}

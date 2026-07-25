@@ -40,6 +40,9 @@ Inside the playback view, a horizontal timeline represents available recordings 
 ### UC-3 — Search by date & time
 Users select a camera and a date (via date picker), and the app shows which time ranges have recordings. Entering a specific time jumps the timeline to that point and begins playback.
 
+### UC-4 — App version visibility
+Users (and IT admins reporting issues) can see which version of the app is currently deployed without checking server logs or files. The version is shown on the first screen (grid view) at all times.
+
 ---
 
 ## 5. Out of scope (v1)
@@ -91,6 +94,7 @@ Users select a camera and a date (via date picker), and the app shows which time
 - [x] Grid renders correctly for 1–16 cameras.
 - [x] Clicking a camera navigates to its playback view.
 - [x] Selecting multiple cameras and clicking playback button navigates to to multiple camera playback view.
+- [ ] The app version is visible on the grid view (e.g. in the header/footer), sourced from `package.json` so it stays in sync with releases without manual edits.
 
 ### AC-2 — Playback
 - [ ] In multiple camera playback view cameras placed in a grid (2 columns for 2–4 cameras, 3 columns for 5–9, 4 columns for 10–16). The grid is always sized to its maximum dimensions based on the camera count — cells never collapse or resize when a camera has no recording at the current time position (a placeholder is shown instead). This prevents layout shifts during continuous playback across day boundaries or gaps.
