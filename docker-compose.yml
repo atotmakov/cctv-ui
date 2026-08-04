@@ -14,3 +14,29 @@ services:
       - STORAGE_PATH=/recordings
       - PORT=3000
     restart: unless-stopped
+
+  # Retention + index.db upkeep (server/maintenance/). Same image as cctv-ui
+  # — same codebase, same dependencies, and rebuildIndex.js/dbService.js
+  # share a schema contract that must stay in lockstep — but a distinct
+  # service: read-write mount (cctv-ui's is :ro, enforced by Docker at the
+  # mount level, so this genuinely cannot run inside that container) and a
+  # one-shot command instead of a long-running server.
+  #
+  # Not started automatically (no `restart:` policy) — trigger it on a
+  # schedule via Synology DSM's Task Scheduler (Control Panel > Task
+  # Scheduler > Create > Scheduled Task > User-defined script) running:
+  #   cd /volume1/docker/cctv-ui && docker compose run --rm cctv-maintenance
+  cctv-maintenance:
+    image: ghcr.io/atotmakov/cctv-ui:latest
+    container_name: cctv-maintenance
+    profiles: ["maintenance"]  # excluded from `docker compose up`; run explicitly
+    command: ["node", "--experimental-sqlite", "server/maintenance/run.js"]
+    volumes:
+      - /volume1/cctv:/recordings:rw
+    environment:
+      - STORAGE_TYPE=local
+      - STORAGE_PATH=/recordings
+      # Comma-separated camera IDs this job is allowed to touch — leave
+      # empty (the default) to manage nothing. See CLAUDE.md before setting.
+      - MAINTENANCE_CAMERAS=
+      - RETENTION_DAYS=30

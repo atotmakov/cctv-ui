@@ -49,8 +49,22 @@ function pickCol(cols, ...patterns) {
   return null;
 }
 
+const MAINTENANCE_TABLE = 'cctv_maintenance_index';
+
 function discoverSchema(db) {
-  for (const tbl of tables(db)) {
+  const allTables = tables(db);
+
+  // Prefer our own maintenance-owned table when present (see
+  // maintenance/rebuildIndex.js): it's regenerated from the current
+  // filesystem state on every run, whereas a camera's own native table (if
+  // this camera also has one) can go stale for any recording the
+  // maintenance job has since pruned — we deliberately never touch a
+  // camera's native schema, so nothing else keeps it in sync after that.
+  if (allTables.includes(MAINTENANCE_TABLE)) {
+    return { table: MAINTENANCE_TABLE, cols: columns(db, MAINTENANCE_TABLE) };
+  }
+
+  for (const tbl of allTables) {
     const cols = columns(db, tbl);
     if (cols.some(c => /start/i.test(c))) return { table: tbl, cols };
   }

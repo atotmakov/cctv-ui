@@ -24,4 +24,16 @@ export default {
     username: process.env.SMB_USERNAME,
     password: process.env.SMB_PASSWORD,
   },
+  // Consumed only by server/maintenance/run.js — not the read-only viewer app.
+  // 0 (unset) means "no retention window configured"; the maintenance script
+  // refuses to run in that case rather than assuming a default.
+  retentionDays: parseInt(process.env.RETENTION_DAYS || '0', 10),
+  // Explicit allowlist of camera IDs the maintenance script is allowed to
+  // touch. Cameras not listed are left entirely alone — they may still be
+  // actively managed by the camera itself (own retention, own index.db).
+  // Empty/unset means "manage nothing," never "manage everything."
+  maintenanceCameras: (process.env.MAINTENANCE_CAMERAS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean),
 };

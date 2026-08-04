@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --watch --experimental-sqlite index.js",
     "start": "node --experimental-sqlite index.js",
-    "test": "cross-env NODE_OPTIONS=--experimental-sqlite vitest run"
+    "test": "cross-env NODE_OPTIONS=--experimental-sqlite vitest run",
+    "maintenance": "node --experimental-sqlite maintenance/run.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
