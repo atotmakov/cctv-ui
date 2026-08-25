@@ -15,7 +15,7 @@ import { authenticateSmb } from '../services/smbAuth.js';
 import { listCameras } from '../services/storageService.js';
 import { pruneOldRecordings } from './retention.js';
 import { rebuildIndexDb } from './rebuildIndex.js';
-import { selectManagedCameras, findUnmatchedCameraIds } from './selectCameras.js';
+import { selectManagedCameras } from './selectCameras.js';
 
 const dryRun = process.argv.includes('--dry-run') || process.env.DRY_RUN === 'true';
 
@@ -38,14 +38,6 @@ async function main() {
     return;
   }
 
-  if (config.maintenanceCameras.length === 0) {
-    console.log(
-      '[maintenance] MAINTENANCE_CAMERAS is empty — nothing to do. ' +
-      'Set it to a comma-separated list of camera IDs to manage.'
-    );
-    return;
-  }
-
   authenticateSmb();
 
   const cutoffDateStr = cutoffDateString(config.retentionDays);
@@ -55,12 +47,9 @@ async function main() {
   );
 
   const allCameras = await listCameras();
-  const cameras = selectManagedCameras(allCameras, config.maintenanceCameras);
-  for (const id of findUnmatchedCameraIds(allCameras, config.maintenanceCameras)) {
-    console.warn(`[maintenance] Configured camera "${id}" not found under storage path — check MAINTENANCE_CAMERAS for typos`);
-  }
+  const cameras = await selectManagedCameras(allCameras);
 
-  console.log(`[maintenance] managing ${cameras.length}/${allCameras.length} camera(s): ${cameras.map(c => c.id).join(', ') || '(none)'}`);
+  console.log(`[maintenance] managing ${cameras.length}/${allCameras.length} camera(s) (no native index.db found): ${cameras.map(c => c.id).join(', ') || '(none)'}`);
 
   let totalRemoved = 0;
   let totalRows = 0;

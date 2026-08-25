@@ -10,6 +10,13 @@ export function dbPath(cameraId) {
   return path.join(config.storagePath, cameraId, 'index.db');
 }
 
+// Dedicated file the maintenance job writes to for a camera it manages (see
+// maintenance/selectCameras.js) — never a camera with its own native
+// index.db, so this filename is exclusively ours whenever it's in use.
+export function managedDbPath(cameraId) {
+  return path.join(config.storagePath, cameraId, 'index_[managed].db');
+}
+
 export async function listCameras() {
   const entries = await fs.readdir(config.storagePath, { withFileTypes: true });
   return entries

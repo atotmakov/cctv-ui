@@ -103,9 +103,17 @@ cd '$NasDir'
 echo '  -> Loading image...'
 sudo docker load < '$Archive'
 rm -f '$Archive'
-echo '  -> Starting container...'
+echo '  -> Starting containers...'
 sudo docker compose up -d --remove-orphans
 sudo docker compose ps
+echo ''
+echo '  -> Maintenance service status (hourly retention + index.db rebuild):'
+if sudo docker inspect -f '{{.State.Running}}' cctv-maintenance 2>/dev/null | grep -q true; then
+    echo '     running.'
+else
+    echo '     WARNING: cctv-maintenance is not running — retention/index.db upkeep will not happen.'
+    echo '     Check: docker compose logs cctv-maintenance -- and RETENTION_DAYS in docker-compose.yml.'
+fi
 "@
 $exitCode = Invoke-RemoteScript -Script $remoteScript
 if ($exitCode -ne 0) { throw "Remote deploy failed" }

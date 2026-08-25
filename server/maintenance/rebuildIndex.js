@@ -1,14 +1,14 @@
 /**
- * Rebuilds a camera's index.db from the authoritative XML/filesystem scan.
- * Writes are done in place inside a single transaction (not a temp-file +
- * rename swap) so an already-open reader connection (server/services/
- * dbService.js caches one DatabaseSync handle per camera indefinitely) sees
- * freshly committed rows on its next query, without the file identity ever
- * changing — renaming over a file another process has open is unreliable on
- * Windows, which is this project's deploy target.
+ * Rebuilds a managed camera's index_[managed].db from the authoritative
+ * XML/filesystem scan. Writes are done in place inside a single transaction
+ * (not a temp-file + rename swap) so an already-open reader connection
+ * (server/services/dbService.js caches one DatabaseSync handle per camera
+ * indefinitely) sees freshly committed rows on its next query, without the
+ * file identity ever changing — renaming over a file another process has
+ * open is unreliable on Windows, which is this project's deploy target.
  */
 
-import { dbPath, listDates } from '../services/storageService.js';
+import { managedDbPath, listDates } from '../services/storageService.js';
 import { scanRecordingsForDate } from '../services/xmlService.js';
 
 let DatabaseSync;
@@ -35,12 +35,11 @@ export async function rebuildIndexDb(cameraId, { dryRun = false } = {}) {
     return 0;
   }
 
-  const db = new DatabaseSync(dbPath(cameraId));
+  const db = new DatabaseSync(managedDbPath(cameraId));
   try {
-    // Table name is deliberately namespaced: some cameras ship their own
-    // native index.db with a real `recordings` table (FK-linked to `blocks`
-    // etc.) — reusing that name corrupts the camera's own schema. This
-    // table is exclusively ours, so it's safe to fully replace every run.
+    // A camera only ever reaches here when it has no native index.db (see
+    // maintenance/selectCameras.js), and this file is a separate path from
+    // that one — so there's never a native schema to collide with.
     db.exec('CREATE TABLE IF NOT EXISTS cctv_maintenance_index (RecordingToken TEXT PRIMARY KEY, StartTime TEXT, StopTime TEXT)');
     db.exec('BEGIN');
     try {

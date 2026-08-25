@@ -13,15 +13,30 @@ try {
   console.warn('[dbService] node:sqlite unavailable; SQLite reads disabled');
 }
 
-import { dbPath } from './storageService.js';
+import { existsSync } from 'fs';
+import { dbPath, managedDbPath } from './storageService.js';
 
 const openDbs = new Map();
+
+// A camera's own native index.db always wins when present; only fall back
+// to the maintenance job's index_[managed].db when there's no native file
+// (see maintenance/selectCameras.js — the two are never meant to coexist,
+// but if they somehow do, the native file is authoritative).
+function resolveDbPath(cameraId) {
+  const native = dbPath(cameraId);
+  if (existsSync(native)) return native;
+  const managed = managedDbPath(cameraId);
+  if (existsSync(managed)) return managed;
+  return null;
+}
 
 function openDb(cameraId) {
   if (!DatabaseSync) return null;
   if (openDbs.has(cameraId)) return openDbs.get(cameraId);
+  const path = resolveDbPath(cameraId);
+  if (!path) return null;
   try {
-    const db = new DatabaseSync(dbPath(cameraId), { readOnly: true });
+    const db = new DatabaseSync(path, { readOnly: true });
     openDbs.set(cameraId, db);
     return db;
   } catch (err) {

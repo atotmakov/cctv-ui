@@ -42,7 +42,7 @@ describe('rebuildIndexDb', () => {
   });
 
   describe.skipIf(!hasSqlite)('with node:sqlite available', () => {
-    it('creates index.db readable by dbService, matching the XML scan', async () => {
+    it('creates index_[managed].db readable by dbService, matching the XML scan', async () => {
       const cam = await makeTmpCameraFromFixture();
       const count = await rebuildIndexDb(cam, { dryRun: false });
       expect(count).toBe(2);

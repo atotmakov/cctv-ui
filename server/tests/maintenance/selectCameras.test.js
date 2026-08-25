@@ -1,34 +1,43 @@
-import { describe, it, expect } from 'vitest';
-import { selectManagedCameras, findUnmatchedCameraIds } from '../../maintenance/selectCameras.js';
+import { describe, it, expect, afterEach } from 'vitest';
+import { promises as fs } from 'fs';
+import { cameraPath, dbPath } from '../../services/storageService.js';
+import { selectManagedCameras } from '../../maintenance/selectCameras.js';
 
-const CAMERAS = [
-  { id: 'axis-aaa', name: 'axis-aaa' },
-  { id: 'axis-bbb', name: 'axis-bbb' },
-  { id: 'axis-ccc', name: 'axis-ccc' },
-];
+let tmpCams = [];
 
-describe('selectManagedCameras', () => {
-  it('returns nothing when no camera IDs are configured', () => {
-    expect(selectManagedCameras(CAMERAS, [])).toEqual([]);
-  });
+async function makeCamera(hasNativeIndexDb) {
+  const id = `tmp-select-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  await fs.mkdir(cameraPath(id), { recursive: true });
+  if (hasNativeIndexDb) {
+    await fs.writeFile(dbPath(id), '');
+  }
+  tmpCams.push(id);
+  return { id, name: id };
+}
 
-  it('returns only the configured cameras, unlisted ones excluded', () => {
-    const result = selectManagedCameras(CAMERAS, ['axis-bbb']);
-    expect(result).toEqual([{ id: 'axis-bbb', name: 'axis-bbb' }]);
-  });
-
-  it('ignores configured IDs that do not match any real camera', () => {
-    const result = selectManagedCameras(CAMERAS, ['axis-bbb', 'no-such-camera']);
-    expect(result).toEqual([{ id: 'axis-bbb', name: 'axis-bbb' }]);
-  });
+afterEach(async () => {
+  await Promise.all(tmpCams.map(id => fs.rm(cameraPath(id), { recursive: true, force: true })));
+  tmpCams = [];
 });
 
-describe('findUnmatchedCameraIds', () => {
-  it('returns an empty array when every configured ID matches a real camera', () => {
-    expect(findUnmatchedCameraIds(CAMERAS, ['axis-aaa', 'axis-ccc'])).toEqual([]);
+describe('selectManagedCameras', () => {
+  it('manages a camera with no native index.db', async () => {
+    const cam = await makeCamera(false);
+    expect(await selectManagedCameras([cam])).toEqual([cam]);
   });
 
-  it('flags configured IDs with no matching camera (likely a typo)', () => {
-    expect(findUnmatchedCameraIds(CAMERAS, ['axis-bbb', 'axis-typo'])).toEqual(['axis-typo']);
+  it('leaves a camera with a native index.db unmanaged', async () => {
+    const cam = await makeCamera(true);
+    expect(await selectManagedCameras([cam])).toEqual([]);
+  });
+
+  it('filters a mixed list down to only the cameras without a native index.db', async () => {
+    const withDb = await makeCamera(true);
+    const withoutDb = await makeCamera(false);
+    expect(await selectManagedCameras([withDb, withoutDb])).toEqual([withoutDb]);
+  });
+
+  it('returns nothing for an empty camera list', async () => {
+    expect(await selectManagedCameras([])).toEqual([]);
   });
 });
