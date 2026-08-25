@@ -68,7 +68,7 @@ Users (and IT admins reporting issues) can see which version of the app is curre
 ### 6.2 Backend
 - **Node.js + Express** (or equivalent) REST API.
 - Responsible for: mounting/reading the SMB share, parsing XML metadata files, serving video files to the browser via HTTP range requests (for seek support), and providing search/listing endpoints.
-- SMB access via the `smb2` npm package or by mounting the share at the OS level on the server.
+- SMB access via OS-level mount, authenticated with Windows `net use` on server startup — no `smb2` npm package used.
 
 ### 6.3 Frontend
 - **React** single-page application.

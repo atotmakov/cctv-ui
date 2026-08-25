@@ -14,8 +14,8 @@ See `PRD.md` for the full product requirements document.
 
 ### Backend
 - **Node.js + Express** — REST API server
-- **SMB access** — via `smb2` npm package or OS-level mount
-- **SQLite** — `better-sqlite3` for reading `index.db` per camera
+- **SMB access** — OS-level mount, authenticated via Windows `net use` on startup (`server/services/smbAuth.js`); no `smb2` npm dependency
+- **SQLite** — built-in `node:sqlite` (`--experimental-sqlite` flag) for reading `index.db`/`index_[managed].db` per camera; no `better-sqlite3` dependency (dropped early on — no Visual Studio build tools on the Windows dev machine)
 - **HTTP range requests** — for browser-side video seeking/scrubbing
 - Video format: H.264 in MKV containers (`video/x-h264`)
 
@@ -57,8 +57,9 @@ cctv-ui/
 │   ├── index.js              # Express entry point
 │   ├── config.js             # Reads .env, exports typed config
 │   ├── routes/
-│   │   ├── cameras.js        # GET /cameras, /cameras/:id/dates, /recordings, POST /cache
+│   │   ├── cameras.js        # GET /cameras, /:id/dates, /:id/latest-recording, /:id/recordings, POST /:id/cache
 │   │   ├── video.js          # GET /video/:cameraId/* (HTTP range support)
+│   │   ├── version.js        # GET /version — reads root package.json
 │   │   └── maintenance.js    # GET /maintenance/status — read-only, see Maintenance Service
 │   ├── services/
 │   │   ├── storageService.js # Filesystem helpers (listCameras, findVideoRelPath, …)
@@ -164,13 +165,17 @@ npm test
 ## Environment Variables (`.env`)
 
 ```
-SMB_HOST=192.168.1.x
+PORT=3000
+STORAGE_TYPE=local           # "local" → STORAGE_PATH is a local/UNC path; "smb" → also runs `net use` on startup
+STORAGE_PATH=./video_example # recordings root; UNC example: \\192.168.1.100\cctv
+SMB_HOST=192.168.1.x         # only used when STORAGE_TYPE=smb
 SMB_SHARE=cctv
 SMB_USERNAME=user
 SMB_PASSWORD=secret
-PORT=3000
 RETENTION_DAYS=30   # consumed only by server/maintenance/run.js, not the viewer app
 ```
+
+See `.env.example` for the full annotated version.
 
 ---
 
@@ -202,4 +207,5 @@ RETENTION_DAYS=30   # consumed only by server/maintenance/run.js, not the viewer
 - **Running it locally**: `npm run maintenance` from `server/` (add `-- --dry-run` to preview without touching disk). There is no in-process cron loop, and deliberately no HTTP trigger endpoint, since this app has no auth (see Coding Conventions) and a network-reachable delete endpoint would be a real risk.
 - **Running it in production**: see `docker-compose.yml`'s `cctv-maintenance` service — same image as `cctv-ui` (same codebase/dependencies, and `rebuildIndex.js`/`dbService.js` share a schema contract that must stay in lockstep, so a separate image would risk version skew), but a distinct service: read-write volume mount (`cctv-ui`'s is `:ro`, enforced by Docker at the mount level, so the maintenance job genuinely cannot run inside that container). The deploy target is a Synology NAS (see `deploy.ps1`/`docker-compose.yml`'s `/volume1` paths) running Docker, not Windows.
   - **Scheduling**: the container runs its own hourly loop internally (`sh -c 'while true; do node ... run.js; sleep 3600; done'`) with `restart: unless-stopped`, and is a normal (non-profile-gated) service — so `docker compose up -d`, which `deploy.ps1` already runs on every deploy, is what keeps it alive. This was chosen over Synology DSM's Task Scheduler because DSM has no supported/documented CLI or API for *creating* scheduled tasks — `synoschedtask` only supports `--get`/`--del`/`--run`/`--sync`, and task creation lives behind an internal, unversioned web API (`SYNO.Core.TaskScheduler`) backed by a SQLite DB (`esynoscheduler.db`) shared with unrelated DSM-owned scheduled jobs (SMART tests, HyperBackup, DSM auto-update) — not safe to script against from `deploy.ps1` without real risk of writing a malformed entry into that shared DB. Retention runs hourly this way regardless of deploy cadence (deploys happen roughly weekly); no idempotency tracking is needed because Compose's own reconciliation (leave a running/unchanged container alone, recreate a missing/updated one) already covers "did this deploy already set up maintenance."
-  - `deploy.ps1` checks `cctv-maintenance`'s running state after every deploy and prints a warning if it isn't up. There's still no dashboard or status endpoint for this service — container running-state plus `docker compose logs cctv-maintenance` (stdout/stderr from `run.js`, no persisted log file) is the only status signal that exists.
+  - `deploy.ps1` checks `cctv-maintenance`'s running state after every deploy and prints a warning if it isn't up. Beyond that, `docker compose logs cctv-maintenance` (stdout/stderr from `run.js`, no persisted log file) is still the only way to see a *specific run's* raw output — the `/maintenance` status page (see above) covers the steady-state question ("is this working, what's it currently managing") but not historical/per-run log detail.
+  - **TODO**: view + download the maintenance log directly from the `/maintenance` status page, instead of needing `docker compose logs` on the NAS. Not yet designed — needs `run.js` to persist output somewhere (with rotation/size cap, since it runs hourly forever) plus a read route and a UI control.

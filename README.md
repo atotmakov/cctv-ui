@@ -1,6 +1,6 @@
 # CCTV Recording Viewer
 
-A self-hosted web application for browsing and playing back recorded CCTV footage from multiple cameras. Recordings are read from an SMB network share — the app never writes to or modifies the share.
+A self-hosted web application for browsing and playing back recorded CCTV footage from multiple cameras. Recordings are read from an SMB network share — the viewer app itself never writes to or modifies the share. (A separate, out-of-band maintenance job optionally handles retention cleanup and index upkeep — see `CLAUDE.md`.)
 
 ---
 
@@ -23,8 +23,8 @@ A self-hosted web application for browsing and playing back recorded CCTV footag
 | Layer | Technology |
 |---|---|
 | Backend | Node.js + Express |
-| SMB access | `smb2` npm package |
-| Database | SQLite (`better-sqlite3`) |
+| SMB access | OS-level mount, `net use` auth (no `smb2` dependency) |
+| Database | SQLite, via built-in `node:sqlite` (no `better-sqlite3` dependency) |
 | Frontend | React (Vite) |
 | Video | Native HTML5 `<video>` |
 | Timeline | Canvas-based scrubber |
@@ -57,12 +57,16 @@ cp .env.example .env
 ```
 
 ```env
-SMB_HOST=192.168.1.x
+PORT=3000
+STORAGE_TYPE=local            # "local" → STORAGE_PATH is a local/UNC path; "smb" → also runs `net use` on startup
+STORAGE_PATH=./video_example  # recordings root; UNC example: \\192.168.1.100\cctv
+SMB_HOST=192.168.1.x          # only used when STORAGE_TYPE=smb
 SMB_SHARE=cctv
 SMB_USERNAME=user
 SMB_PASSWORD=secret
-PORT=3000
 ```
+
+See `.env.example` for the full annotated version, including `RETENTION_DAYS` (used by the out-of-band maintenance service — see `CLAUDE.md`).
 
 **3. Start**
 
@@ -110,20 +114,25 @@ cctv-ui/
 │   ├── index.js              Express entry point
 │   ├── config.js             Environment config
 │   ├── routes/
-│   │   ├── cameras.js        GET /api/cameras, /recordings, etc.
-│   │   └── video.js          GET /api/video/:id/* (range request support)
-│   └── services/
-│       ├── storageService.js Filesystem + SMB helpers
-│       ├── xmlService.js     recording.xml parser
-│       └── dbService.js      SQLite reader
+│   │   ├── cameras.js        GET /api/cameras, /:id/dates, /:id/latest-recording, /:id/recordings, POST /:id/cache
+│   │   ├── video.js          GET /api/video/:id/* (range request support)
+│   │   ├── version.js        GET /api/version
+│   │   └── maintenance.js    GET /api/maintenance/status (read-only)
+│   ├── services/
+│   │   ├── storageService.js Filesystem + SMB helpers
+│   │   ├── xmlService.js     recording.xml parser
+│   │   ├── dbService.js      SQLite reader
+│   │   └── maintenanceStatusService.js  Status page data (see CLAUDE.md)
+│   └── maintenance/          Out-of-band retention + index rebuild job (see CLAUDE.md)
 └── client/
     └── src/
         ├── App.jsx
         └── components/
-            ├── CameraGrid.jsx   Camera selection grid
-            ├── PlaybackView.jsx Date picker + players + timeline
-            ├── VideoPlayer.jsx  HTML5 video with auto-advance
-            └── Timeline.jsx     Canvas scrubber
+            ├── CameraGrid.jsx        Camera selection grid
+            ├── PlaybackView.jsx      Date picker + players + timeline
+            ├── VideoPlayer.jsx       HTML5 video with auto-advance
+            ├── Timeline.jsx          Canvas scrubber
+            └── MaintenanceStatus.jsx Maintenance service + per-camera status page
 ```
 
 ---
@@ -134,7 +143,7 @@ cctv-ui/
 - Motion detection or alerts
 - Clip export / download
 - User authentication
-- Writing or deleting recordings
+- Writing or deleting recordings from the viewer app (the separate maintenance job is the sole exception — see `CLAUDE.md`)
 
 ---
 
