@@ -7,6 +7,7 @@ import { authenticateSmb } from './services/smbAuth.js';
 import camerasRouter from './routes/cameras.js';
 import videoRouter from './routes/video.js';
 import versionRouter from './routes/version.js';
+import maintenanceRouter from './routes/maintenance.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use('/api/cameras', camerasRouter);
 app.use('/api/video', videoRouter);
 app.use('/api/version', versionRouter);
+app.use('/api/maintenance', maintenanceRouter);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 

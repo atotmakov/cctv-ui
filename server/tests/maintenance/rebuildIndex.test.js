@@ -26,6 +26,25 @@ async function makeTmpCameraFromFixture() {
   return tmpCam;
 }
 
+// A recording still being written has no <StopTime> in its recording.xml
+// yet — reproduces the production crash where node:sqlite rejected the
+// resulting `undefined` bind value.
+async function makeTmpCameraWithInProgressRecording() {
+  tmpCam = `tmp-inprogress-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const tokenDir = path.join(cameraPath(tmpCam), '20260408', '10', 'TOK-INPROGRESS');
+  await fs.mkdir(tokenDir, { recursive: true });
+  await fs.writeFile(path.join(tokenDir, 'recording.xml'),
+    '<Recording RecordingToken="TOK-INPROGRESS">' +
+    '<SourceToken>1</SourceToken>' +
+    '<StartTime>2026-04-08T10:00:00.000000Z</StartTime>' +
+    '<Content></Content>' +
+    '<Track TrackToken="Video"><VideoAttributes><Width>720</Width><Height>1280</Height>' +
+    '<Framerate>30.00000</Framerate><Encoding>video/x-h264</Encoding></VideoAttributes></Track>' +
+    '</Recording>'
+  );
+  return tmpCam;
+}
+
 afterEach(async () => {
   if (tmpCam) {
     await fs.rm(cameraPath(tmpCam), { recursive: true, force: true });
@@ -69,6 +88,16 @@ describe('rebuildIndexDb', () => {
       // an already-open reader without needing to reopen the DB file.
       expect(getAvailableDates(cam)).toEqual(['20260407']);
       expect(getRecordingsForDate(cam, '20260406')).toHaveLength(0);
+    });
+
+    it('does not throw on a recording still in progress (no StopTime yet), and stores it with a null stopTime', async () => {
+      const cam = await makeTmpCameraWithInProgressRecording();
+      const count = await rebuildIndexDb(cam, { dryRun: false });
+      expect(count).toBe(1);
+
+      const recordings = getRecordingsForDate(cam, '20260408');
+      expect(recordings).toHaveLength(1);
+      expect(recordings[0].stopTime).toBeNull();
     });
   });
 });

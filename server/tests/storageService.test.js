@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { promises as fs } from 'fs';
 import path from 'path';
+import config from '../config.js';
 import { listCameras, listDates, findVideoRelPath, cameraPath, dbPath } from '../services/storageService.js';
 
 const CAM = 'test-cam';
@@ -16,6 +18,31 @@ describe('listCameras (AC-1)', () => {
     const cam = cameras.find(c => c.id === CAM);
     expect(cam).toBeDefined();
     expect(cam.name).toBe(CAM);
+  });
+
+  describe('filters out Synology filesystem-internal directories', () => {
+    let reservedDirs = [];
+
+    afterEach(async () => {
+      await Promise.all(reservedDirs.map(name =>
+        fs.rm(path.join(config.storagePath, name), { recursive: true, force: true })
+      ));
+      reservedDirs = [];
+    });
+
+    it('excludes @eaDir', async () => {
+      reservedDirs.push('@eaDir');
+      await fs.mkdir(path.join(config.storagePath, '@eaDir'), { recursive: true });
+      const cameras = await listCameras();
+      expect(cameras.find(c => c.id === '@eaDir')).toBeUndefined();
+    });
+
+    it('excludes #recycle', async () => {
+      reservedDirs.push('#recycle');
+      await fs.mkdir(path.join(config.storagePath, '#recycle'), { recursive: true });
+      const cameras = await listCameras();
+      expect(cameras.find(c => c.id === '#recycle')).toBeUndefined();
+    });
   });
 });
 

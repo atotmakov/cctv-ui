@@ -48,7 +48,10 @@ export async function rebuildIndexDb(cameraId, { dryRun = false } = {}) {
         'INSERT OR REPLACE INTO cctv_maintenance_index (RecordingToken, StartTime, StopTime) VALUES (?, ?, ?)'
       );
       for (const rec of recordings) {
-        insert.run(rec.token, rec.startTime, rec.stopTime);
+        // A recording still in progress has no <StopTime> yet, so
+        // rec.stopTime is undefined — node:sqlite only accepts null (not
+        // undefined) for an absent bind value.
+        insert.run(rec.token, rec.startTime, rec.stopTime ?? null);
       }
       db.exec('COMMIT');
     } catch (err) {

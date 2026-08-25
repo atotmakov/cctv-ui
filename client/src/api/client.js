@@ -14,6 +14,9 @@ export const getCameras = () =>
 export const getVersion = () =>
   fetch(`${BASE}/version`).then(json);
 
+export const getMaintenanceStatus = () =>
+  fetch(`${BASE}/maintenance/status`).then(json);
+
 export const getCameraDates = (cameraId) =>
   fetch(`${BASE}/cameras/${encodeURIComponent(cameraId)}/dates`).then(json);
 

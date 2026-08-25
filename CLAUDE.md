@@ -58,11 +58,13 @@ cctv-ui/
 │   ├── config.js             # Reads .env, exports typed config
 │   ├── routes/
 │   │   ├── cameras.js        # GET /cameras, /cameras/:id/dates, /recordings, POST /cache
-│   │   └── video.js          # GET /video/:cameraId/* (HTTP range support)
+│   │   ├── video.js          # GET /video/:cameraId/* (HTTP range support)
+│   │   └── maintenance.js    # GET /maintenance/status — read-only, see Maintenance Service
 │   ├── services/
 │   │   ├── storageService.js # Filesystem helpers (listCameras, findVideoRelPath, …)
 │   │   ├── xmlService.js     # recording.xml parser + date scanner
 │   │   ├── dbService.js      # node:sqlite reader (falls back gracefully)
+│   │   ├── maintenanceStatusService.js # Reads maintenance-status.json + live per-camera status
 │   │   └── smbAuth.js        # `net use` SMB authentication (shared by index.js + maintenance)
 │   └── maintenance/          # Out-of-band CLI, NOT part of the read-only HTTP API — see below
 │       ├── run.js            # Entrypoint: prune + rebuild per camera, --dry-run supported
@@ -75,7 +77,7 @@ cctv-ui/
     ├── index.html
     └── src/
         ├── main.jsx
-        ├── App.jsx           # React Router: / → CameraGrid, /playback/:ids → PlaybackView
+        ├── App.jsx           # React Router: / → CameraGrid, /playback/:ids, /maintenance → MaintenanceStatus
         ├── index.css         # Global dark theme variables
         ├── api/
         │   └── client.js     # fetch wrappers for all API endpoints
@@ -84,7 +86,8 @@ cctv-ui/
             ├── CameraCard.jsx           # Single camera tile
             ├── PlaybackView.jsx / .css  # UC-2/3 date picker + players + timeline
             ├── VideoPlayer.jsx / .css   # HTML5 <video> with seek + auto-advance
-            └── Timeline.jsx / .css      # Canvas scrubber (24h, recording segments)
+            ├── Timeline.jsx / .css      # Canvas scrubber (24h, recording segments)
+            └── MaintenanceStatus.jsx / .css  # /maintenance — service + per-camera status
 ```
 
 ---
@@ -191,8 +194,10 @@ RETENTION_DAYS=30   # consumed only by server/maintenance/run.js, not the viewer
   1. `retention.js` deletes every `YYYYMMDD` date-folder older than `RETENTION_DAYS`.
   2. `rebuildIndex.js` then regenerates the camera's index from a fresh XML/filesystem scan of whatever dates remain — this is the same authoritative scan (`xmlService.scanRecordingsForDate`) the read API already trusts, so the rebuilt index can't drift from reality. Rows are written into a `cctv_maintenance_index` table inside **`index_[managed].db`**, a file distinct from `index.db`, in one SQLite transaction, in place — not a temp-file-and-rename swap, so the already-open read connection the viewer app caches per camera picks up the fresh data without needing to reopen the file.
 - **Scope — automatic, per camera, re-evaluated every run**: whether a camera is managed is *detected*, not configured. `server/maintenance/selectCameras.js` treats a camera as managed only when its folder has **no native `index.db`** — presence of one is taken to mean the camera itself (or something else) already owns retention/indexing there, so it's left completely alone: nothing is deleted, nothing is written. There is no allowlist to keep in sync or forget to update. Only cameras with no active local writer (e.g. an S3-synced archive folder, or a camera whose own retention already clears files locally) should ever end up without a native `index.db` — a camera still actively recording to the same share and maintaining its own native `index.db` is automatically excluded, since deleting files out from under it would desync its own bookkeeping (the script never touches a camera's native tables, so it can't keep them accurate once files it doesn't manage disappear).
+  - **`listCameras()` filters out Synology filesystem-internal directories** (`@eaDir`, `#recycle`, anything starting with `@`/`#` — see `storageService.js`). These appear alongside real camera folders in every share directory, have no `index.db` of their own, and were observed being swept into management (retention run against `@eaDir`, an index rebuild attempted inside it) the first time this ran in production after the allowlist was removed — confirming the exact class of risk auto-detection introduces: it manages *any* directory without an `index.db`, not just real cameras.
   - **Read path**: `dbService.js` always prefers a native `index.db` over `index_[managed].db` when both happen to exist for a camera — the native file is authoritative if present.
-  - **Known gaps, not yet mitigated**: a folder whose native `index.db` got carried along by sync tooling (rather than genuinely having a live writer) will be silently left unmanaged with no signal that this happened; and a camera flipping between managed/unmanaged across runs (e.g. a native `index.db` appearing after `index_[managed].db` was already in use) produces no audit trail today, and can leave a stale, no-longer-updated `index_[managed].db` behind. Planned mitigations: a status page showing each camera's managed/unmanaged state and which db file is in use, and general per-camera health signals (archive length, time since last recording) to help catch anomalies.
+  - **Status page**: `/maintenance` in the client (`GET /api/maintenance/status`, `server/routes/maintenance.js` + `server/services/maintenanceStatusService.js`) shows, per camera, live managed/unmanaged state and active db file (recomputed fresh from the filesystem on every request — never stale), plus date-folder count and oldest/newest date. It also shows the last real (non-dry-run) run's summary — timestamp, cameras managed, folders removed, rows written, any per-camera error — which `run.js` writes to `maintenance-status.json` (via `maintenanceStatusPath()`) at the storage root after each run; dry-runs don't write it. This route is read-only and cannot trigger or affect a run.
+  - **Known gap, not yet mitigated**: a folder whose native `index.db` got carried along by sync tooling (rather than genuinely having a live writer) is silently left unmanaged — the status page will show it as `unmanaged` with no way to distinguish that from a camera that's actually still recording, so this still needs a human to notice. Planned mitigation: general per-camera health signals (archive length, time since last recording) to help catch this and other anomalies, and to clean up a stale `index_[managed].db` left behind after a managed→unmanaged flip.
 - **Config**: `RETENTION_DAYS` in `.env` (default in `docker-compose.yml` is **33** days). Unset or `0` makes the script refuse to run — no implicit "delete everything" default.
 - **Running it locally**: `npm run maintenance` from `server/` (add `-- --dry-run` to preview without touching disk). There is no in-process cron loop, and deliberately no HTTP trigger endpoint, since this app has no auth (see Coding Conventions) and a network-reachable delete endpoint would be a real risk.
 - **Running it in production**: see `docker-compose.yml`'s `cctv-maintenance` service — same image as `cctv-ui` (same codebase/dependencies, and `rebuildIndex.js`/`dbService.js` share a schema contract that must stay in lockstep, so a separate image would risk version skew), but a distinct service: read-write volume mount (`cctv-ui`'s is `:ro`, enforced by Docker at the mount level, so the maintenance job genuinely cannot run inside that container). The deploy target is a Synology NAS (see `deploy.ps1`/`docker-compose.yml`'s `/volume1` paths) running Docker, not Windows.

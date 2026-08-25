@@ -17,10 +17,26 @@ export function managedDbPath(cameraId) {
   return path.join(config.storagePath, cameraId, 'index_[managed].db');
 }
 
+// Small JSON summary the maintenance job writes after each real (non-dry-run)
+// run, at the storage root rather than under any camera folder — read by the
+// viewer app's maintenance status route. Never written by the viewer itself.
+export function maintenanceStatusPath() {
+  return path.join(config.storagePath, 'maintenance-status.json');
+}
+
+// Synology filesystem-internal directories (@eaDir thumbnail/attribute
+// caches, #recycle bins, etc.) show up alongside real camera folders in
+// every share directory. They're not cameras — critically, they also have
+// no native index.db, so without this filter the maintenance job's
+// auto-detection (see maintenance/selectCameras.js) would "manage" them:
+// running retention deletion and index rebuilds against filesystem
+// internals. Confirmed happening in production logs for @eaDir.
+const RESERVED_DIR_PATTERN = /^[@#]/;
+
 export async function listCameras() {
   const entries = await fs.readdir(config.storagePath, { withFileTypes: true });
   return entries
-    .filter(e => e.isDirectory())
+    .filter(e => e.isDirectory() && !RESERVED_DIR_PATTERN.test(e.name))
     .map(e => ({ id: e.name, name: e.name }));
 }
 

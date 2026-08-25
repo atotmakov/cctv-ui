@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { getCameras, getVersion } from '../api/client.js';
 import CameraCard from './CameraCard.jsx';
 import './CameraGrid.css';
@@ -52,13 +52,16 @@ export default function CameraGrid() {
           CCTV Viewer
           {version && <span className="version-badge">v{version}</span>}
         </h1>
-        <button
-          className="btn-primary"
-          disabled={selected.size === 0}
-          onClick={openSelected}
-        >
-          Watch {selected.size > 0 ? selected.size : ''} selected
-        </button>
+        <div className="grid-header-actions">
+          <Link to="/maintenance" className="btn-view">Maintenance</Link>
+          <button
+            className="btn-primary"
+            disabled={selected.size === 0}
+            onClick={openSelected}
+          >
+            Watch {selected.size > 0 ? selected.size : ''} selected
+          </button>
+        </div>
       </header>
 
       {cameras.length === 0 ? (

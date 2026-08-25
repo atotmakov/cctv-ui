@@ -10,9 +10,10 @@
  * run manually. RETENTION_DAYS must be set in .env or the run is refused.
  */
 
+import { promises as fs } from 'fs';
 import config from '../config.js';
 import { authenticateSmb } from '../services/smbAuth.js';
-import { listCameras } from '../services/storageService.js';
+import { listCameras, maintenanceStatusPath } from '../services/storageService.js';
 import { pruneOldRecordings } from './retention.js';
 import { rebuildIndexDb } from './rebuildIndex.js';
 import { selectManagedCameras } from './selectCameras.js';
@@ -53,6 +54,7 @@ async function main() {
 
   let totalRemoved = 0;
   let totalRows = 0;
+  const cameraResults = [];
 
   for (const camera of cameras) {
     try {
@@ -60,8 +62,10 @@ async function main() {
       const rows = await rebuildIndexDb(camera.id, { dryRun });
       totalRemoved += removed.length;
       totalRows += rows;
+      cameraResults.push({ id: camera.id, dateFoldersRemoved: removed.length, indexRowsWritten: rows, error: null });
     } catch (err) {
       console.error(`[maintenance] Failed processing ${camera.id}:`, err);
+      cameraResults.push({ id: camera.id, dateFoldersRemoved: 0, indexRowsWritten: 0, error: err.message });
     }
   }
 
@@ -69,6 +73,29 @@ async function main() {
     `[maintenance] done. cameras: ${cameras.length}, ` +
     `date-folders removed: ${totalRemoved}, index rows written: ${totalRows}`
   );
+
+  if (!dryRun) {
+    await writeStatus({
+      lastRunAt: new Date().toISOString(),
+      retentionDays: config.retentionDays,
+      cutoffDate: cutoffDateStr,
+      camerasManaged: cameras.length,
+      camerasTotal: allCameras.length,
+      totalDateFoldersRemoved: totalRemoved,
+      totalIndexRowsWritten: totalRows,
+      cameras: cameraResults,
+    });
+  }
+}
+
+// Best-effort — a failure here must never fail the actual maintenance work
+// that already happened above.
+async function writeStatus(status) {
+  try {
+    await fs.writeFile(maintenanceStatusPath(), JSON.stringify(status, null, 2));
+  } catch (err) {
+    console.warn('[maintenance] Failed to write status file:', err.message);
+  }
 }
 
 main();
