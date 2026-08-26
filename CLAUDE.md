@@ -59,7 +59,7 @@ cctv-ui/
 │   ├── routes/
 │   │   ├── cameras.js        # GET /cameras, /:id/dates, /:id/latest-recording, /:id/recordings, POST /:id/cache
 │   │   ├── video.js          # GET /video/:cameraId/* (HTTP range support)
-│   │   ├── version.js        # GET /version — reads root package.json
+│   │   ├── version.js        # GET /version — reads root package.json (patch digit auto-bumped by CI on every master build, see .github/workflows/ci.yml)
 │   │   └── maintenance.js    # GET /maintenance/status — read-only, see Maintenance Service
 │   ├── services/
 │   │   ├── storageService.js # Filesystem helpers (listCameras, findVideoRelPath, …)

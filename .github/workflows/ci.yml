@@ -34,11 +34,38 @@ jobs:
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
 
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
       - uses: actions/checkout@v4
+
+      # Bumps the patch digit (0.3.0 -> 0.3.1) so every build on master gets
+      # a distinct version, baked into the image before it's built, and
+      # visible via GET /api/version / the grid-view badge. Pushed with the
+      # default GITHUB_TOKEN, which GitHub deliberately does not re-trigger
+      # `on: push` workflows for — no infinite-loop risk, no [skip ci] needed.
+      - name: Bump build version
+        id: bump
+        run: |
+          NEW_VERSION=$(node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+            const parts = pkg.version.split('.');
+            parts[2] = String(Number(parts[2]) + 1);
+            pkg.version = parts.join('.');
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+            process.stdout.write(pkg.version);
+          ")
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit build version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump build version to ${{ steps.bump.outputs.version }}"
+          git push
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
