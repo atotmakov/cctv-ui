@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import config from '../config.js';
 import { readMaintenanceRunStatus, getCameraStatuses } from '../services/maintenanceStatusService.js';
 
 const router = Router();
@@ -15,7 +14,10 @@ router.get('/status', async (_req, res) => {
       getCameraStatuses(),
     ]);
     res.json({
-      configuredRetentionDays: config.retentionDays,
+      // Sourced from the maintenance job's own status file, not this
+      // process's env — RETENTION_DAYS is only ever set on the
+      // cctv-maintenance service/container, not on this (cctv-ui) one.
+      configuredRetentionDays: lastRun?.retentionDays ?? null,
       lastRun,
       cameras,
     });
