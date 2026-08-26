@@ -100,6 +100,10 @@ IT admins can open a dedicated status page in the app to see, per camera, whethe
 - [x] Grid renders correctly for 1–16 cameras.
 - [x] Clicking a camera navigates to its playback view.
 - [x] Selecting multiple cameras and clicking playback button navigates to to multiple camera playback view.
+- [x] Each camera can be selected independently via a checkbox on its card (distinct from clicking the card itself, which opens that camera's playback view directly); the multi-camera playback action is disabled until at least one camera is selected.
+- [x] Non-camera filesystem-internal directories (e.g. Synology's `@eaDir`, `#recycle`) are never listed as cameras.
+- [x] If no cameras are found, a clear "No cameras found" message is shown instead of an empty grid.
+- [x] Camera cells size to fill the available window as large as possible — using the full viewport width and height, for any number of cameras — so that every camera is visible at once without scrolling, rather than wrapping into a fixed-size, scrollable list. Cells keep a fixed 16:9 thumbnail aspect ratio as they grow or shrink to fit.
 - [x] The app version is visible on the grid view (e.g. in the header/footer), sourced from `package.json` so it stays in sync with releases without manual edits.
 
 ### AC-2 — Playback
