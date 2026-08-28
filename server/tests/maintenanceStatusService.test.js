@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { promises as fs } from 'fs';
-import { cameraPath, dbPath, managedDbPath, maintenanceStatusPath } from '../services/storageService.js';
+import { cameraPath, dbPath, managedDbPath, maintenanceStatusPath, heartbeatPath } from '../services/storageService.js';
 import { readMaintenanceRunStatus, getCameraStatuses } from '../services/maintenanceStatusService.js';
 
 const CAM = 'test-cam';
@@ -8,11 +8,12 @@ const CAM = 'test-cam';
 let tmpCams = [];
 let wroteStatusFile = false;
 
-async function makeCamera({ nativeDb = false, managedDb = false } = {}) {
+async function makeCamera({ nativeDb = false, managedDb = false, heartbeat = null } = {}) {
   const id = `tmp-status-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   await fs.mkdir(cameraPath(id), { recursive: true });
   if (nativeDb) await fs.writeFile(dbPath(id), '');
   if (managedDb) await fs.writeFile(managedDbPath(id), '');
+  if (heartbeat !== null) await fs.writeFile(heartbeatPath(id), heartbeat);
   tmpCams.push(id);
   return id;
 }
@@ -53,6 +54,39 @@ describe('getCameraStatuses', () => {
     const cam = statuses.find(c => c.id === id);
     expect(cam.managed).toBe(true);
     expect(cam.activeDbFile).toBe('index_[managed].db');
+  });
+
+  it('reports heartbeat as null for a camera with no status.json (the common case)', async () => {
+    const id = await makeCamera();
+    const statuses = await getCameraStatuses();
+    expect(statuses.find(c => c.id === id).heartbeat).toBeNull();
+  });
+
+  it('parses a real acap-sd-s3-sync status.json into camelCase fields', async () => {
+    const raw = JSON.stringify({
+      prefix: 'test-cam/',
+      app_version: '0.9.5',
+      timestamp: '2026-08-28T18:17:10Z',
+      uptime_seconds: 79571,
+      last_sync_pass: { time: '2026-08-28T18:16:12Z', uploaded: 3, skipped: 4749, failed: 0 },
+      tracked_files: 4753,
+    });
+    const id = await makeCamera({ heartbeat: raw });
+    const statuses = await getCameraStatuses();
+    const hb = statuses.find(c => c.id === id).heartbeat;
+    expect(hb).toEqual({
+      appVersion: '0.9.5',
+      timestamp: '2026-08-28T18:17:10Z',
+      uptimeSeconds: 79571,
+      trackedFiles: 4753,
+      lastSyncPass: { time: '2026-08-28T18:16:12Z', uploaded: 3, skipped: 4749, failed: 0 },
+    });
+  });
+
+  it('reports heartbeat as null for malformed status.json rather than crashing', async () => {
+    const id = await makeCamera({ heartbeat: '{not valid json' });
+    const statuses = await getCameraStatuses();
+    expect(statuses.find(c => c.id === id).heartbeat).toBeNull();
   });
 });
 

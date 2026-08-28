@@ -24,6 +24,16 @@ export function maintenanceStatusPath() {
   return path.join(config.storagePath, 'maintenance-status.json');
 }
 
+// Heartbeat written by the camera itself, not by anything in this codebase —
+// the acap-sd-s3-sync ACAP app (github.com/atotmakov/axis/acap-sd-s3-sync)
+// uploads this to <Prefix>status.json on its own timer (default every 300s)
+// so an otherwise-unreachable, outbound-only camera has some way to report
+// whether it's alive and how its last S3 sync pass went. Only cameras
+// running that app have this file at all — most won't.
+export function heartbeatPath(cameraId) {
+  return path.join(config.storagePath, cameraId, 'status.json');
+}
+
 // Synology filesystem-internal directories (@eaDir thumbnail/attribute
 // caches, #recycle bins, etc.) show up alongside real camera folders in
 // every share directory. They're not cameras — critically, they also have

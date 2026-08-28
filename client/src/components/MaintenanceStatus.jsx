@@ -7,6 +7,11 @@ const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
+// acap-sd-s3-sync's default HeartbeatIntervalSeconds is 300s; a heartbeat
+// missing 3 whole cycles is a reasonable signal the camera/app has actually
+// stopped reporting rather than just landing between ticks.
+const HEARTBEAT_STALE_MS = 15 * MINUTE;
+
 function formatAgo(iso) {
   if (!iso) return null;
   const diffMs = Math.max(0, Date.now() - new Date(iso).getTime());
@@ -64,43 +69,67 @@ export default function MaintenanceStatus() {
         </div>
       </section>
 
-      <table className="maint-table">
-        <thead>
-          <tr>
-            <th>Camera</th>
-            <th>Status</th>
-            <th>Active DB file</th>
-            <th>Date folders</th>
-            <th>Range</th>
-            <th>Last run</th>
-          </tr>
-        </thead>
-        <tbody>
-          {cameras.map(cam => {
-            const runInfo = cameraById.get(cam.id);
-            return (
-              <tr key={cam.id}>
-                <td>{cam.id}</td>
-                <td>
-                  <span className={`maint-badge ${cam.managed ? 'managed' : 'unmanaged'}`}>
-                    {cam.managed ? 'managed' : 'unmanaged'}
-                  </span>
-                </td>
-                <td>{cam.activeDbFile ?? '—'}</td>
-                <td>{cam.dateFolderCount}</td>
-                <td>{cam.oldestDate && cam.newestDate ? `${cam.oldestDate} → ${cam.newestDate}` : '—'}</td>
-                <td>
-                  {runInfo
-                    ? (runInfo.error
-                        ? <span className="maint-badge error" title={runInfo.error}>error</span>
-                        : `−${runInfo.dateFoldersRemoved} / +${runInfo.indexRowsWritten}`)
-                    : (cam.managed ? 'not yet run' : '—')}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div className="maint-table-wrap">
+        <table className="maint-table">
+          <thead>
+            <tr>
+              <th>Camera</th>
+              <th>Status</th>
+              <th>Active DB file</th>
+              <th>Date folders</th>
+              <th>Range</th>
+              <th>Last run</th>
+              <th>Camera agent</th>
+              <th>Last S3 sync</th>
+            </tr>
+          </thead>
+          <tbody>
+            {cameras.map(cam => {
+              const runInfo = cameraById.get(cam.id);
+              const hb = cam.heartbeat;
+              const hbStale = hb && Date.now() - new Date(hb.timestamp).getTime() > HEARTBEAT_STALE_MS;
+              const sync = hb?.lastSyncPass;
+              return (
+                <tr key={cam.id}>
+                  <td>{cam.id}</td>
+                  <td>
+                    <span className={`maint-badge ${cam.managed ? 'managed' : 'unmanaged'}`}>
+                      {cam.managed ? 'managed' : 'unmanaged'}
+                    </span>
+                  </td>
+                  <td>{cam.activeDbFile ?? '—'}</td>
+                  <td>{cam.dateFolderCount}</td>
+                  <td>{cam.oldestDate && cam.newestDate ? `${cam.oldestDate} → ${cam.newestDate}` : '—'}</td>
+                  <td>
+                    {runInfo
+                      ? (runInfo.error
+                          ? <span className="maint-badge error" title={runInfo.error}>error</span>
+                          : `−${runInfo.dateFoldersRemoved} / +${runInfo.indexRowsWritten}`)
+                      : (cam.managed ? 'not yet run' : '—')}
+                  </td>
+                  <td>
+                    {hb ? (
+                      <>
+                        <span className={`maint-badge ${hbStale ? 'error' : 'managed'}`} title={hb.timestamp}>
+                          {hbStale ? 'stale' : 'ok'}
+                        </span>{' '}
+                        v{hb.appVersion} · {formatAgo(hb.timestamp)}
+                      </>
+                    ) : '—'}
+                  </td>
+                  <td>
+                    {sync
+                      ? <span title={sync.time}>
+                          +{sync.uploaded} / ={sync.skipped}{sync.failed > 0 && ` / ⚠${sync.failed}`}
+                        </span>
+                      : (hb ? 'no sync yet' : '—')}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

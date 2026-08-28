@@ -149,4 +149,5 @@ IT admins can open a dedicated status page in the app to see, per camera, whethe
 - [x] The status page shows each camera's date-folder count and oldest/newest date.
 - [x] The status page shows a summary of the last real (non-dry-run) run: timestamp, cameras managed, folders removed, rows written, and any per-camera errors.
 - [x] The status page is read-only and cannot trigger or otherwise affect a maintenance run.
+- [x] For a camera reporting its own heartbeat (via the separate `acap-sd-s3-sync` camera-side app), the status page shows its agent version, time since last heartbeat, and the last S3 sync pass result — cameras not running that app just show no heartbeat data, never an error.
 - [ ] IT admins can view and download the maintenance log directly from the status page. (tracked TODO — see `CLAUDE.md` "Maintenance Service")
