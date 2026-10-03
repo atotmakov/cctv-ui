@@ -128,16 +128,27 @@ export default function PlaybackView() {
     setPlaying(true);
   }
 
-  // Called when any VideoPlayer's current recording ends.
-  // Finds the next recording (by startTime) that begins strictly after the
-  // current display time, across all cameras. Seeks to it and keeps playing.
-  // If no further recordings exist today, stops playback.
-  function handlePlayEnd() {
+  // Called when a VideoPlayer's current recording ends.
+  // If another camera is still inside one of its recordings at the current
+  // display time, do nothing: that camera keeps playing (and driving the
+  // cursor) to the end of its clip, and the ended camera picks up its next
+  // recording via VideoPlayer's auto-switch once the cursor reaches it.
+  // Only when no camera has footage left at this moment do we jump to the
+  // next recording (by startTime) across all cameras, or stop if there is none.
+  function handlePlayEnd(endedCameraId) {
+    const t = displayTime ? new Date(displayTime).getTime() : 0;
+
+    const othersStillPlaying = Object.entries(recordingsMap).some(([id, recs]) =>
+      id !== endedCameraId && recs.some(r =>
+        r.videoRelPath &&
+        t >= new Date(r.startTime).getTime() && t < new Date(r.stopTime).getTime()
+      )
+    );
+    if (othersStillPlaying) return;
+
     const allRecs = Object.values(recordingsMap)
       .flat()
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-    const t    = displayTime ? new Date(displayTime).getTime() : 0;
     const next = allRecs.find(r => new Date(r.startTime).getTime() > t);
 
     if (next) {
@@ -204,7 +215,7 @@ export default function PlaybackView() {
                 playing={playing}
                 currentPlaybackTime={displayTime}
                 onTimeUpdate={iso => handleTimeUpdate(id, iso)}
-                onPlayEnd={handlePlayEnd}
+                onPlayEnd={() => handlePlayEnd(id)}
               />
             ))}
           </div>
