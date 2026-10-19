@@ -186,7 +186,7 @@ See `.env.example` for the full annotated version.
 - Timeline scrubbing accuracy: **±2 seconds**
 - Support **1–16 cameras** in grid view
 - Playback speeds: **0.5×, 1×, 2×, 4×, 8×**
-- Multi-camera playback: cameras stacked **vertically**
+- Multi-camera playback: cameras in a fixed-size **grid** (2 cols for 2–4, 3 for 5–9, 4 for 10–16) — see PRD AC-2
 - Gaps in recordings shown as **grey/empty segments** on the timeline
 
 ---
