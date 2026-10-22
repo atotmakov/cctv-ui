@@ -26,6 +26,11 @@ All facts below were measured read-only on production (NAS 192.168.1.100) on 202
   `node:sqlite` is synchronous, so the cost is paid on the event loop once per camera per minute at most.
 - **Rationale**: Keeps SC-004 (status page < 2 s for 16 cameras) safe even if in-process reads turn out to be
   hundreds of ms; 60 s staleness is irrelevant for signals measured in hours.
+- **Measured in-process (2026-10-22, T020)**: inside the running `cctv-ui` container on the NAS (read-only
+  connections, `node:sqlite`), the `min(start)` + 8-day query for all 7 cameras took **16.9 ms cold** (including
+  opening each file) and **7.5 ms warm** in total — 0.5–3.5 ms per camera, 74–603 rows each. The 0.23–1.26 s above
+  was `sqlite3` CLI process start-up. Far inside the T020 limits (≤ 500 ms cold / ≤ 100 ms warm), so no background
+  refresh is needed; the 60 s memo stays.
 - **Alternatives considered**: Precompute in the maintenance job — rejected: it only covers managed cameras, runs
   hourly, and would add a new write (constitution Principle I). No cache — acceptable if measured in-process time is
   small; re-evaluate against the T020 limits (≤ 100 ms warm / ≤ 500 ms cold for 7 cameras in total); if exceeded,
@@ -55,9 +60,38 @@ All facts below were measured read-only on production (NAS 192.168.1.100) on 202
   (handles new cameras and the retention boundary).
 - **Null stop time** (recording in progress or never closed): end = start. Conservative: a continuously-recording
   camera still produces new starts well within the 2 h minimum.
-- **Known limitation**: after a camera recovers from a long outage, that outage becomes its longest gap and relaxes
-  the recency threshold for the next 7 days. Accepted for v1; the activity rule still catches a repeat stop.
-  Revisit (e.g. percentile instead of max) only if SC-003/SC-001 replay shows a problem.
+- **Typical longest gap (revised 2026-10-22 after replay)**: the first draft used the single longest gap over the
+  baseline. The replay showed that one past outage then relaxes the threshold for a week — `axis-00408CE2767E`'s
+  20.5 h outage on 8 Oct gave it a 31 h threshold (SC-002 failed), and `axis-b8a44f73558a`'s 78 h outage on 4 Oct
+  would have been worse. Now: each baseline day's longest gap (assigned to the day the earlier recording started),
+  then the **median** across days. Healthy cameras' typical longest gap is their 8–11 h overnight gap.
+
+### Threshold tuning from the replay (2026-10-22, T019)
+
+| Key | Draft | Tuned | Why |
+|---|---|---|---|
+| `activityMinMedianForZero` | 3 | 10 | 0 vs ~3 at 07:00 on a Saturday (`…0FE28`, 10 Oct) is normal |
+| `activityCriticalMinMedian` | 8 | 20 | 3 vs ~14 at 10:00 on the same Saturday was flagged critical |
+| `activityWarnMinMedian` | 3 | 20 | 1 vs ~3–4 at 07:00 and 4 vs ~9 at 09:00 were flagged on 6 mornings |
+| `activityWarnRatio` | 0.5 | 0.4 | `…298CD` had 14 vs ~29 (48%) on the evening of Mon 12 Oct; spec scenario 15 vs ~40 (37.5%) still warns |
+
+Result over the 29 Sep – 20 Oct export (hourly, Europe/Moscow):
+
+- Healthy cameras (`…298CD`, `…0FE28`, `…8EE5`): **0 false-alarm days** in 7–20 Oct (draft: 8), `ok` at every hour
+  of 13–19 Oct.
+- Failed cameras first critical: `…6c2746` 15 Oct 22:00 (7 vs ~50 today), `…734f32` / `…73558a` 16 Oct 05:00 and
+  `…2767E` 16 Oct 11:00 (no recordings for 12–13 h vs a typical ~8 h) — all before the 18 Oct target, and all
+  critical at 18 Oct 23:00.
+- Before the incident (7–14 Oct) the failed cameras were flagged only on real anomalies: `…2767E` recorded nothing
+  until midday on 8 Oct, `…6c2746`/`…734f32` had a third of their usual count on 8–9 Oct, `…73558a` was coming back
+  from its 78 h outage on 7 Oct.
+- Trade-off: a camera whose usual count by now is under 20 is judged by the recency rule only (activity never
+  warns). That covers quiet cameras; it means a quiet camera recording at half its rate is not flagged.
+- **Open issue found on the live check (2026-10-22)**: a camera that keeps trickling (≈1 recording/day) for more than
+  ~4 days normalises into its own 7-day baseline and turns green — `…2767E` showed `ok` with 1 today vs a usual 8
+  (it was ~75/day before 17 Oct), `…6c2746` `ok` with a usual 1. The replay (to 19 Oct) could not show this.
+  Candidate fix: use up to 28 complete days (still ≥ 7 to leave "learning") for both medians, so an outage only
+  becomes "normal" after ~2 weeks. Needs a spec decision (FR-001/004/005 say "previous 7 days").
 
 ## R5 — Validating SC-001 against real data
 

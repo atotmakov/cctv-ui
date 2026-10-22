@@ -28,4 +28,6 @@ export default {
   // 0 (unset) means "no retention window configured"; the maintenance script
   // refuses to run in that case rather than assuming a default.
   retentionDays: parseInt(process.env.RETENTION_DAYS || '0', 10),
+  // IANA timezone used for "today" / "time of day" in camera health evaluation.
+  healthTimeZone: process.env.HEALTH_TIMEZONE || 'UTC',
 };

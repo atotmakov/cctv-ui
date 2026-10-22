@@ -6,9 +6,12 @@
  * unrecognised — callers fall back to XML directory scanning.
  */
 
+// process.getBuiltinModule rather than import(): Vite (used by the tests)
+// strips the `node:` prefix and then can't resolve the prefix-only `sqlite`
+// builtin, which silently disabled every SQLite read under test.
 let DatabaseSync;
 try {
-  ({ DatabaseSync } = await import('node:sqlite'));
+  ({ DatabaseSync } = process.getBuiltinModule('node:sqlite'));
 } catch {
   console.warn('[dbService] node:sqlite unavailable; SQLite reads disabled');
 }
@@ -43,6 +46,15 @@ function openDb(cameraId) {
     console.warn(`[dbService] Cannot open DB for ${cameraId}: ${err.message}`);
     return null;
   }
+}
+
+// Drops a cached connection. Only tests need this: Windows won't delete a
+// temp camera's db file while a connection to it is still open.
+export function closeDb(cameraId) {
+  const db = openDbs.get(cameraId);
+  if (!db) return;
+  openDbs.delete(cameraId);
+  try { db.close(); } catch { /* already closed */ }
 }
 
 function tables(db) {
@@ -133,6 +145,38 @@ export function getAvailableDates(cameraId) {
       .map(r => r.d.replace(/-/g, ''));
   } catch (err) {
     console.warn(`[dbService] getAvailableDates failed for ${cameraId}: ${err.message}`);
+    return null;
+  }
+}
+
+// Start/stop times of every recording that started at or after `sinceIso`
+// (ISO-8601 UTC, compared as text — both schemas store ISO UTC strings),
+// plus the earliest start in the whole index so callers can tell which days
+// are fully covered. Used by healthService.
+export function getRecordingHistory(cameraId, sinceIso) {
+  const db = openDb(cameraId);
+  if (!db) return null;
+  try {
+    const schema = discoverSchema(db);
+    if (!schema) return null;
+    const { table, cols } = schema;
+
+    const startCol = pickCol(cols, 'starttime', 'start_time', '^start$');
+    if (!startCol) return null;
+    const stopCol = pickCol(cols, 'stoptime', 'stop_time', 'endtime', '^stop$', '^end$');
+
+    const { earliest } = db
+      .prepare(`SELECT min("${startCol}") AS earliest FROM "${table}"`)
+      .get();
+    const stopExpr = stopCol ? `"${stopCol}"` : 'NULL';
+    const recordings = db
+      .prepare(`SELECT "${startCol}" AS s, ${stopExpr} AS e FROM "${table}" WHERE "${startCol}" >= ? ORDER BY "${startCol}"`)
+      .all(sinceIso)
+      .map(r => ({ startTime: r.s ?? null, stopTime: r.e ?? null }));
+
+    return { earliestStart: earliest ?? null, recordings };
+  } catch (err) {
+    console.warn(`[dbService] getRecordingHistory failed for ${cameraId}: ${err.message}`);
     return null;
   }
 }

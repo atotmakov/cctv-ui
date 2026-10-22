@@ -21,7 +21,7 @@ fields keep their names and meaning, so existing clients are unaffected.
       "health": {
         "level": "critical",
         "reasons": [
-          "No recordings for 2d 9h; normally never more than 4h apart",
+          "No recordings for 2d 9h; normally at most ~4h apart",
           "0 recordings today; usually ~38 by 14:00"
         ],
         "evaluatedAt": "2026-10-19T11:00:00.000Z",

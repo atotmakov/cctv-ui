@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { promises as fs } from 'fs';
 import { cameraPath, dbPath, managedDbPath, maintenanceStatusPath, heartbeatPath } from '../services/storageService.js';
 import { readMaintenanceRunStatus, getCameraStatuses } from '../services/maintenanceStatusService.js';
+import { closeDb } from '../services/dbService.js';
 
 const CAM = 'test-cam';
 
@@ -19,6 +20,8 @@ async function makeCamera({ nativeDb = false, managedDb = false, heartbeat = nul
 }
 
 afterEach(async () => {
+  // getCameraStatuses evaluates health, which opens each camera's index.
+  tmpCams.forEach(closeDb);
   await Promise.all(tmpCams.map(id => fs.rm(cameraPath(id), { recursive: true, force: true })));
   tmpCams = [];
   if (wroteStatusFile) {
@@ -54,6 +57,13 @@ describe('getCameraStatuses', () => {
     const cam = statuses.find(c => c.id === id);
     expect(cam.managed).toBe(true);
     expect(cam.activeDbFile).toBe('index_[managed].db');
+  });
+
+  it('includes a health result for each camera', async () => {
+    const id = await makeCamera();
+    const statuses = await getCameraStatuses();
+    for (const cam of statuses) expect(cam).toHaveProperty('health');
+    expect(statuses.find(c => c.id === id).health.level).toBe('unknown');
   });
 
   it('reports heartbeat as null for a camera with no status.json (the common case)', async () => {

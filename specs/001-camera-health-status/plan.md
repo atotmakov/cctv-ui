@@ -80,7 +80,7 @@ server/
 │   └── maintenanceStatusService.js    # getCameraStatuses() adds `health` per camera
 └── tests/
     ├── healthService.test.js          # NEW: rule unit tests + SC-001 replay
-    ├── fixtures/health/oct-2026.json  # NEW: start/stop timestamps exported from prod, 29 Sep – 21 Oct
+    ├── health-fixtures/oct-2026.json  # NEW: start/stop timestamps exported from prod, 29 Sep – 21 Oct
     ├── dbService.test.js              # + getRecordingHistory for native and managed schemas
     ├── maintenanceStatusService.test.js # + getCameraStatuses includes health
     └── routes/maintenance.test.js     # + status includes health; one broken index doesn't fail the response

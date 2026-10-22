@@ -6,3 +6,4 @@ dist/
 .claude/settings.local.json
 video_example/
 *.tar.gz
+*.log

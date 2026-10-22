@@ -26,9 +26,9 @@ Validation: rows with an unparsable `startTime` are skipped (logged once per cam
 | Key | Default | Rule |
 |---|---|---|
 | `baselineDays` | 7 | both |
-| `activityMinMedianForZero` | 3 | activity → critical when today = 0 |
-| `activityCriticalRatio` / `activityCriticalMinMedian` | 0.25 / 8 | activity → critical |
-| `activityWarnRatio` / `activityWarnMinMedian` | 0.5 / 3 | activity → warn |
+| `activityMinMedianForZero` | 10 | activity → critical when today = 0 |
+| `activityCriticalRatio` / `activityCriticalMinMedian` | 0.25 / 20 | activity → critical |
+| `activityWarnRatio` / `activityWarnMinMedian` | 0.4 / 20 | activity → warn |
 | `recencyGapMultiplier` | 1.5 | recency |
 | `recencyMinMs` | 2 h | recency floor |
 | `cacheTtlMs` | 60 s | memoisation |
@@ -44,16 +44,16 @@ Validation: rows with an unparsable `startTime` are skipped (logged once per cam
 | `figures.usualCount` | number or `null` | median of same window over complete baseline days |
 | `figures.completeDays` | number | 0–7; `< 7` ⇒ activity is "learning" |
 | `figures.lastRecordingEnd` | ISO or `null` | newest `end` |
-| `figures.longestGapMs` | number or `null` | longest gap in baseline days |
+| `figures.longestGapMs` | number or `null` | typical longest gap: median over baseline days of each day's longest gap between consecutive recordings |
 | `figures.recencyThresholdMs` | number or `null` | `max(recencyMinMs, multiplier × longestGapMs)`; `recencyMinMs` when `longestGapMs` is `null`; `null` only when there are no recordings |
 
 ### Level rules
 
 ```
 activity  (completeDays ≥ 7):
-  median ≥ 3 and today = 0                 → critical
-  median ≥ 8 and today < 0.25 × median     → critical
-  median ≥ 3 and today < 0.5  × median     → warn
+  median ≥ 10 and today = 0                → critical
+  median ≥ 20 and today < 0.25 × median    → critical
+  median ≥ 20 and today < 0.4  × median    → warn
   otherwise                                → ok
 activity  (completeDays < 7)               → learning (no level; reason "learning (N of 7 days)")
 
@@ -64,6 +64,7 @@ recency   (lastRecordingEnd known):
   otherwise                                → ok, but counts as no result while activity is learning
 
 no history at all / index unreadable       → unknown
+no recordings in the window, older ones   → critical ("No recordings for more than 7 days")
 overall = max severity of the rule results; unknown if there are none (incl. learning + recency ok)
 ```
 

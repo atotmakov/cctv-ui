@@ -22,7 +22,7 @@ page.
 
 An IT admin opens the maintenance status page and, in the existing cameras table, sees a coloured status label per
 camera: green (ok), yellow (warn), red (critical), or grey (unknown) — the health label. Hovering or focusing the label shows the
-plain-language reasons, e.g. "No recordings for 31 h; normally never more than 6 h apart" or "0 recordings today;
+plain-language reasons, e.g. "No recordings for 31h; normally at most ~6h apart" or "0 recordings today;
 usually ~45 by this time".
 
 **Why this priority**: This is the failure that actually happened and went unnoticed for two days.
@@ -97,11 +97,13 @@ confirm it stays green 10 h into a normal overnight gap and on a normal low-coun
   recording data to evaluate. While the activity rule is learning, the recency rule contributes only when it is
   `critical`; otherwise the overall level is `unknown` with reason "learning (N of 7 days)".
 - **FR-004**: Activity rule: compare today's number of recordings up to the current time of day with the median of
-  the same time window over the previous 7 complete days. If the median is at least 3 and today's count is 0, or
-  today is below 25% of a median of at least 8 → `critical`; below 50% of a median of at least 3 → `warn`. With
-  fewer than 7 complete days of history the rule reports "learning" and yields no level.
-- **FR-005**: Recency rule: if the time since the newest recording ended is longer than 1.5× the camera's longest gap
-  between consecutive recordings over the previous 7 days, and never less than 2 h → `critical`.
+  the same time window over the previous 7 complete days. If the median is at least 10 and today's count is 0, or
+  today is below 25% of a median of at least 20 → `critical`; below 40% of a median of at least 20 → `warn`. With
+  fewer than 7 complete days of history the rule reports "learning" and yields no level. (Values tuned on the
+  production replay — see research R4; earlier draft values 3/8/50%/3 flagged normal quiet mornings.)
+- **FR-005**: Recency rule: if the time since the newest recording ended is longer than 1.5× the camera's typical
+  longest gap — the median, over the previous 7 days, of each day's longest gap between consecutive recordings —
+  and never less than 2 h → `critical`. Using the median means one past outage does not loosen the threshold.
 - **FR-006**: Thresholds (multipliers, percentages, minimum gap, window length) MUST be defined in one place on the
   server, not hardcoded across the code; they are not configurable from the UI.
 
@@ -133,7 +135,7 @@ confirm it stays green 10 h into a normal overnight gap and on a normal low-coun
 - **SC-001**: Evaluated against the real recording history of 13–19 Oct 2026, the four cameras that stopped
   recording are red by the end of 18 Oct at the latest, and the three normally recording cameras are green on every
   day.
-- **SC-002**: A camera that stops recording turns red no later than max(2 h, 1.5 × its longest gap between
+- **SC-002**: A camera that stops recording turns red no later than max(2 h, 1.5 × its typical longest gap between
   recordings over the previous 7 days) after its last recording ended; in the 13–19 Oct replay this is within 24 h
   for every camera.
 - **SC-003**: No camera with normal recording activity is yellow or red on more than 1 day in 30.

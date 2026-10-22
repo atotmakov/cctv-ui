@@ -11,6 +11,7 @@
 import { promises as fs } from 'fs';
 import { existsSync } from 'fs';
 import { dbPath, managedDbPath, maintenanceStatusPath, heartbeatPath, listCameras, listDates } from './storageService.js';
+import { getCameraHealth } from './healthService.js';
 
 export async function readMaintenanceRunStatus() {
   try {
@@ -62,6 +63,9 @@ export async function getCameraStatuses() {
       oldestDate: dates[0] ?? null,
       newestDate: dates[dates.length - 1] ?? null,
       heartbeat: await readCameraHeartbeat(camera.id),
+      // Never throws (null on unexpected error), so one camera can't reject
+      // the whole Promise.all.
+      health: getCameraHealth(camera.id),
     };
   }));
 }
