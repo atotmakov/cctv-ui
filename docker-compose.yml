@@ -13,6 +13,8 @@ services:
       - STORAGE_TYPE=local
       - STORAGE_PATH=/recordings
       - PORT=3000
+      # Local timezone for camera health "today" / time-of-day on /maintenance.
+      - HEALTH_TIMEZONE=Europe/Moscow
     restart: unless-stopped
 
   # Retention + index.db upkeep (server/maintenance/). Same image as cctv-ui

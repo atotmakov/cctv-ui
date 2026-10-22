@@ -13,7 +13,7 @@ import { scanRecordingsForDate } from '../services/xmlService.js';
 
 let DatabaseSync;
 try {
-  ({ DatabaseSync } = await import('node:sqlite'));
+  ({ DatabaseSync } = process.getBuiltinModule('node:sqlite'));
 } catch {
   console.warn('[rebuildIndex] node:sqlite unavailable; cannot rebuild index.db');
 }

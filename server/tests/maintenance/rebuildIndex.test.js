@@ -2,14 +2,14 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { cameraPath, dbPath } from '../../services/storageService.js';
-import { getAvailableDates, getRecordingsForDate } from '../../services/dbService.js';
+import { getAvailableDates, getRecordingsForDate, closeDb } from '../../services/dbService.js';
 import { rebuildIndexDb } from '../../maintenance/rebuildIndex.js';
 
 const SRC_CAM = 'test-cam';
 
 let hasSqlite = false;
 try {
-  const m = await import('node:sqlite');
+  const m = process.getBuiltinModule('node:sqlite');
   hasSqlite = !!m.DatabaseSync;
 } catch { /* flag not present */ }
 
@@ -47,6 +47,7 @@ async function makeTmpCameraWithInProgressRecording() {
 
 afterEach(async () => {
   if (tmpCam) {
+    closeDb(tmpCam);
     await fs.rm(cameraPath(tmpCam), { recursive: true, force: true });
     tmpCam = undefined;
   }

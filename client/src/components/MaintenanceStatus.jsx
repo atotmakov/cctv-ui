@@ -21,6 +21,22 @@ function formatAgo(iso) {
   return `${Math.floor(diffMs / DAY)}d ago`;
 }
 
+// health is null when evaluation failed server-side; show that as unknown.
+function HealthBadge({ health }) {
+  const level = health?.level ?? 'unknown';
+  const reasons = health?.reasons ?? (health ? [] : ['health could not be evaluated']);
+  return (
+    <span
+      className={`maint-badge health ${level}`}
+      title={reasons.join('\n')}
+      tabIndex={0}
+      aria-label={[`Health: ${level}`, ...reasons].join('. ')}
+    >
+      {level}
+    </span>
+  );
+}
+
 export default function MaintenanceStatus() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -74,6 +90,7 @@ export default function MaintenanceStatus() {
           <thead>
             <tr>
               <th>Camera</th>
+              <th>Health</th>
               <th>Status</th>
               <th>Active DB file</th>
               <th>Date folders</th>
@@ -92,6 +109,7 @@ export default function MaintenanceStatus() {
               return (
                 <tr key={cam.id}>
                   <td>{cam.id}</td>
+                  <td><HealthBadge health={cam.health} /></td>
                   <td>
                     <span className={`maint-badge ${cam.managed ? 'managed' : 'unmanaged'}`}>
                       {cam.managed ? 'managed' : 'unmanaged'}
