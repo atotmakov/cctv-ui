@@ -103,7 +103,7 @@ and at 08:00 with 0 recordings; SC-001 replay passes
 - [X] T021 [P] Update `PRD.md`: extend UC-6 and add an acceptance criterion for the per-camera Health label (green/yellow/red/grey, reasons on hover, derived from recording history only)
 - [X] T022 [P] Update `CLAUDE.md`: add `healthService.js` to the folder structure, `HEALTH_TIMEZONE` to the env section, and a short "Camera health" paragraph under the Maintenance Service status-page notes (two rules, thresholds in `HEALTH_THRESHOLDS`, read-only), and update the "Known gap, not yet mitigated" paragraph so "time since last recording" is listed as implemented rather than planned
 - [X] T023 Run `npm test` and `npm run build` from repo root; both must pass
-- [ ] T024 Run quickstart.md §2 (local `/maintenance` against `video_example`) and, after deploy, §3 (production curl check and < 2 s page load) — §2 done 2026-10-22 against the real share (local `.env` points at the NAS, read-only): all 7 cameras labelled, status in 714 ms over SMB; §3 pending deploy (images are built only from `master`)
+- [X] T024 Run quickstart.md §2 (local `/maintenance` against `video_example`) and, after deploy, §3 (production curl check and < 2 s page load) — §2 done 2026-10-22 against the real share (local `.env` points at the NAS, read-only): all 7 cameras labelled, status in 714 ms over SMB; §3 done 2026-10-22 after deploying v0.3.6: every camera has a level, `734f32`/`73558a` red with reasons, `HEALTH_TIMEZONE=Europe/Moscow` in the container, status API 0.28 s cold / 0.01 s warm, page 0.02 s
 
 ---
 
