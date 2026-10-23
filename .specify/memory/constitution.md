@@ -57,7 +57,7 @@ Rationale: without auth, any mutating endpoint is an unauthenticated remote dele
 - Supported playback speeds are 0.5×, 1×, 2×, 4×, 8×.
 
 Rationale: the product exists because NVR software is slow; these targets are acceptance criteria
-in `PRD.md`, and a feature that regresses them is not done.
+in `specs/000-baseline/spec.md` (AC-5), and a feature that regresses them is not done.
 
 ### V. Degrade Gracefully, Never Crash
 
@@ -106,8 +106,9 @@ dependencies means fewer breakages and a smaller image.
 - Any change touching `server/maintenance/`, camera discovery, or the index schema MUST include
   tests covering: unmanaged cameras untouched, internal directories excluded, and dry-run writing
   nothing.
-- `PRD.md` acceptance criteria and `CLAUDE.md` MUST be updated in the same change when a feature
-  alters user-visible behaviour or architecture.
+- Acceptance criteria (`specs/000-baseline/spec.md` for baseline areas, the feature's own
+  `specs/NNN-*/spec.md` otherwise) and `CLAUDE.md` MUST be updated in the same change when a feature
+  alters user-visible behaviour or architecture; `PRD.md` when it changes a use case or scope.
 - Version numbers are managed by CI (patch auto-bumped on each `master` build); do not bump by hand.
 
 ## Governance
@@ -115,10 +116,10 @@ dependencies means fewer breakages and a smaller image.
 - This constitution supersedes conflicting guidance in other project documents; `CLAUDE.md` is the
   runtime development guide and MUST stay consistent with it.
 - Amendments are made via `/speckit-constitution`, committed with a message describing the change,
-  and MUST update dependent docs (`CLAUDE.md`, `PRD.md`) in the same commit when they conflict.
+  and MUST update dependent docs (`CLAUDE.md`, `PRD.md`, `specs/`) in the same commit when they conflict.
 - Versioning: MAJOR for removing or redefining a principle, MINOR for adding a principle/section or
   materially expanding guidance, PATCH for clarifications and wording.
 - Compliance: every feature plan and review MUST check Principles I–VI; any violation MUST be
   documented and justified, or the change is rejected.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-19 | **Last Amended**: 2026-10-19
+**Version**: 1.0.1 | **Ratified**: 2026-10-19 | **Last Amended**: 2026-10-23

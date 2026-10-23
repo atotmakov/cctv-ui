@@ -6,7 +6,8 @@ A read-only web application for browsing, searching, and playing back recorded C
 
 The app is **read-only** — it never writes to the SMB share or modifies recordings. The one deliberate exception is `server/maintenance/`, a separate out-of-band script (not reachable via the HTTP API) that owns retention cleanup and `index.db` upkeep — see [Maintenance Service](#maintenance-service-retention--indexdb) below.
 
-See `PRD.md` for the full product requirements document.
+See `PRD.md` for the product requirements (overview, use cases, scope). Acceptance criteria live in the specs:
+`specs/000-baseline/spec.md` (AC-1 … AC-8, everything built before Spec Kit) and `specs/NNN-*/spec.md` per feature since.
 
 ---
 
@@ -37,6 +38,7 @@ See `PRD.md` for the full product requirements document.
 ```
 cctv-ui/
 ├── PRD.md
+├── specs/                    # Spec Kit: 000-baseline (AC-1…AC-8) + one folder per feature
 ├── CLAUDE.md
 ├── package.json              # npm workspaces root; runs both server + client
 ├── .env                      # local config (never committed)
@@ -203,7 +205,7 @@ See `.env.example` for the full annotated version.
 - Timeline scrubbing accuracy: **±2 seconds**
 - Support **1–16 cameras** in grid view
 - Playback speeds: **0.5×, 1×, 2×, 4×, 8×**
-- Multi-camera playback: cameras in a fixed-size **grid** (2 cols for 2–4, 3 for 5–9, 4 for 10–16) — see PRD AC-2
+- Multi-camera playback: cameras in a fixed-size **grid** (2 cols for 2–4, 3 for 5–9, 4 for 10–16) — see `specs/000-baseline/spec.md` AC-2
 - Gaps in recordings shown as **grey/empty segments** on the timeline
 
 ---
