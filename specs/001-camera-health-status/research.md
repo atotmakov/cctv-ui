@@ -92,6 +92,8 @@ Result over the 29 Sep – 20 Oct export (hourly, Europe/Moscow):
   (it was ~75/day before 17 Oct), `…6c2746` `ok` with a usual 1. The replay (to 19 Oct) could not show this.
   Candidate fix: use up to 28 complete days (still ≥ 7 to leave "learning") for both medians, so an outage only
   becomes "normal" after ~2 weeks. Needs a spec decision (FR-001/004/005 say "previous 7 days").
+  Confirmed again 2026-10-23 with the new ok-tooltips: `…2767E`, `…6c2746`, `…734f32`, `…73558a` all `ok` with
+  "usually ~0–1 by 22:54" and recency limits of 1d 4h–1d 9h.
 
 ## R5 — Validating SC-001 against real data
 
@@ -112,5 +114,10 @@ Result over the 29 Sep – 20 Oct export (hourly, Europe/Moscow):
 - **Decision**: New "Health" column next to "Camera" in the existing `MaintenanceStatus` table: a label using the
   existing `maint-badge` styling with new `ok`/`warn`/`critical`/`unknown` colour variants, text = level,
   `title` = reasons joined by newlines, `tabIndex=0` and `aria-label` for keyboard/screen-reader access.
+- **Revision (2026-10-23, after the live check)**: a green label had an empty tooltip, which left the admin
+  unable to tell why it was green. Every rule that ran now adds a reason line — problems first, then
+  "learning", then passed rules: `"Last recording 30m ago; alert after 13h"` (recency) and
+  `"44 recordings today; usually ~31 by 22:54"` (activity). These lines also made the open issue in R4 visible on
+  the page: four of seven cameras showed "usually ~0–1", i.e. a near-dead week had become their baseline.
 - **Rationale**: Satisfies FR-007 (colour + text, reasons on hover/focus) and FR-008 (one column, nothing else).
   The existing "Status" column (managed/unmanaged) keeps its name.

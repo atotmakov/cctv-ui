@@ -111,6 +111,7 @@ IT admins can open a dedicated status page in the app to see, per camera, whethe
 - [x] Video plays in browser without requiring plugins.
 - [x] Scrubbing the timeline seeks to the correct position within ±2 seconds.
 - [x] Transitions between adjacent recording files are seamless (auto-advance).
+- [x] Auto-advance also works when a camera starts its next recording before the previous one stops (overlaps of a fraction of a second are common — 22 across three cameras on 23 Oct 2026). Playback never freezes at such a point, at any speed including 8×; the newer recording takes over.
 - [x] Gaps in recordings are visually distinct on the timeline (grey/empty segment).
 - [x] Playback controls: play/pause, speed (0.5×, 1×, 2×, 4×, 8×).
 
@@ -130,6 +131,8 @@ IT admins can open a dedicated status page in the app to see, per camera, whethe
 
 ### AC-6 — Timeline control
 - [x] All recordings for the selected time period are represented as intervals; the position and length of each interval correspond to the recording's start time and duration.
+- [x] The timeline spans the selected date's local calendar day (midnight to midnight in the camera/NAS time zone, the same day the recording date folders use), so its hour labels match the time display next to the play button. The date picker defaults to today's local date.
+- [x] As soon as a date's recordings load, the current-time cursor and time display show where playback will start (the first recording of the day), before Play is pressed.
 - [x] In multiple-camera mode each camera has its own labelled row of recording intervals on the timeline.
 - [x] When the play button is pressed and the current position is in a gap, playback jumps to the nearest recording to the right.
 - [x] The timeline supports zoom in / zoom out; zoomed view pans to keep the current-time cursor visible.
@@ -151,5 +154,5 @@ IT admins can open a dedicated status page in the app to see, per camera, whethe
 - [x] The status page shows a summary of the last real (non-dry-run) run: timestamp, cameras managed, folders removed, rows written, and any per-camera errors.
 - [x] The status page is read-only and cannot trigger or otherwise affect a maintenance run.
 - [x] For a camera reporting its own heartbeat (via the separate `acap-sd-s3-sync` camera-side app), the status page shows its agent version, time since last heartbeat, and the last S3 sync pass result — cameras not running that app just show no heartbeat data, never an error.
-- [x] Each camera shows a health label — green ok / yellow warn / red critical / grey unknown, with the level also as text — derived only from that camera's recording history; hovering or focusing it shows the reasons (e.g. "No recordings for 31h; normally at most ~6h apart"). A camera with less than 7 days of history is grey ("learning") unless it has clearly stopped. One camera's unreadable index never affects the rest of the page.
+- [x] Each camera shows a health label — green ok / yellow warn / red critical / grey unknown, with the level also as text — derived only from that camera's recording history; hovering or focusing it shows the reasons for every level, green included — problems first, then the checks that passed (e.g. "No recordings for 31h; normally at most ~6h apart", or for a green camera "Last recording 30m ago; alert after 13h" and "44 recordings today; usually ~31 by 22:54"). A camera with less than 7 days of history is grey ("learning") unless it has clearly stopped. One camera's unreadable index never affects the rest of the page.
 - [ ] IT admins can view and download the maintenance log directly from the status page. (tracked TODO — see `CLAUDE.md` "Maintenance Service")

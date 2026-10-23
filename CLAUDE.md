@@ -121,6 +121,21 @@ cctv-ui/
 ### `index.db` SQLite
 Schema to be confirmed by reading the actual DB. Expected columns: filename, path, starttime, stoptime, camera ID.
 
+### Time zones and overlaps (observed in production)
+- `StartTime`/`StopTime` are UTC, but the `YYYYMMDD`/`HH` folders and recording tokens are the camera's **local**
+  time (Europe/Moscow in production). A recording at `2026-10-22T21:01Z` lives in `20261023/00/`. Anything that
+  maps recordings onto "a day" (timeline, date picker default, health's `HEALTH_TIMEZONE`) must use the local day,
+  not UTC — a UTC timeline put such recordings, and the playback cursor, off the left edge.
+- Consecutive recordings of one camera can **overlap** by a fraction of a second (next starts ~0.2–0.4 s before the
+  previous stops). Code that looks up "the recording at time t" must prefer the one that started last
+  (`VideoPlayer.findRecForTime`); taking the first match rewound the clip that had just ended and froze playback.
+
+### Testing playback in a real browser
+Two browser behaviours look like app freezes but aren't: Chrome doesn't load `<video>` data in a background tab
+(readyState stays 0), and `play()` triggered by a script `click()` is rejected (`NotAllowedError`) until a real user
+gesture. Keep the tab visible and press Play with a real click; then instrument the `<video>` events
+(`pause`/`ended`/`seeking`) to see what actually stopped it.
+
 ---
 
 ## Coding Conventions
