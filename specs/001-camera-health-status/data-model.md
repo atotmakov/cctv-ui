@@ -38,7 +38,7 @@ Validation: rows with an unparsable `startTime` are skipped (logged once per cam
 | Field | Type | Notes |
 |---|---|---|
 | `level` | `'ok' \| 'warn' \| 'critical' \| 'unknown'` | most severe rule result |
-| `reasons` | `string[]` | empty when `ok`; human-readable, e.g. `"0 recordings today; usually ~45 by 14:00"` |
+| `reasons` | `string[]` | one per rule that ran, problems first, then "learning", then passed rules; human-readable, e.g. `"0 recordings today; usually ~45 by 14:00"`, `"Last recording 30m ago; alert after 13h"` |
 | `evaluatedAt` | ISO string | instant used as "now" |
 | `figures.todayCount` | number | recordings today up to now |
 | `figures.usualCount` | number or `null` | median of same window over complete baseline days |

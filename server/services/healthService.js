@@ -173,8 +173,11 @@ export function evaluateHealth(history, now, { timeZone = 'UTC', thresholds = HE
   const lastEnd = recs.reduce((m, r) => Math.max(m, r.end), 0);
   const sinceLast = nowMs - lastEnd;
 
+  // Every rule that ran explains itself, so an ok label has a reason too.
+  // Problems come first, then "learning", then the rules that passed.
   const levels = [];
-  const reasons = [];
+  const problems = [];
+  const passed = [];
   const learning = completeDays < t.baselineDays;
 
   let usualCount = null;
@@ -185,22 +188,22 @@ export function evaluateHealth(history, now, { timeZone = 'UTC', thresholds = HE
     else if (usualCount >= t.activityCriticalMinMedian && todayCount < t.activityCriticalRatio * usualCount) activity = 'critical';
     else if (usualCount >= t.activityWarnMinMedian && todayCount < t.activityWarnRatio * usualCount) activity = 'warn';
     levels.push(activity);
-    if (activity !== 'ok') {
-      reasons.push(`${todayCount} recordings today; usually ~${Math.round(usualCount)} by ${localTimeOfDay(nowMs, timeZone)}`);
-    }
+    const text = `${todayCount} recordings today; usually ~${Math.round(usualCount)} by ${localTimeOfDay(nowMs, timeZone)}`;
+    (activity === 'ok' ? passed : problems).push(text);
   }
 
   const recencyCritical = sinceLast > recencyThresholdMs;
   if (recencyCritical) {
     levels.push('critical');
-    reasons.unshift(longestGapMs === null
+    problems.unshift(longestGapMs === null
       ? `No recordings for ${formatDuration(sinceLast)} (limit ${formatDuration(recencyThresholdMs)})`
       : `No recordings for ${formatDuration(sinceLast)}; normally at most ~${formatDuration(longestGapMs)} apart`);
-  } else if (!learning) {
-    levels.push('ok');
+  } else {
+    if (!learning) levels.push('ok');
+    passed.unshift(`Last recording ${formatDuration(sinceLast)} ago; alert after ${formatDuration(recencyThresholdMs)}`);
   }
 
-  if (learning) reasons.push(`learning (${completeDays} of ${t.baselineDays} days)`);
+  const reasons = [...problems, ...(learning ? [`learning (${completeDays} of ${t.baselineDays} days)`] : []), ...passed];
 
   return result(worstLevel(levels), reasons, nowMs, {
     todayCount,

@@ -36,11 +36,14 @@ const NOW = new Date('2026-10-20T14:00:00Z');
 const NORMAL = every(30, 6 * 60, 22 * 60);
 
 describe('evaluateHealth — US1 rules', () => {
-  it('(a) normal recording → ok with no reasons', () => {
+  it('(a) normal recording → ok, with each passed rule explained', () => {
     const h = history([...daily('2026-10-10', '2026-10-19', NORMAL), ...daily('2026-10-20', '2026-10-20', every(30, 6 * 60, 14 * 60))]);
     const r = evaluateHealth(h, NOW, UTC);
     expect(r.level).toBe('ok');
-    expect(r.reasons).toEqual([]);
+    expect(r.reasons).toEqual([
+      'Last recording 30m ago; alert after 13h',
+      '16 recordings today; usually ~16 by 14:00',
+    ]);
   });
 
   it('(b) usual count ≥ 3 and none today → critical, reason names both counts', () => {
@@ -61,8 +64,9 @@ describe('evaluateHealth — US1 rules', () => {
     const r = evaluateHealth(h, NOW, UTC);
     expect(r.level).toBe('critical');
     expect(r.figures.todayCount).toBe(3);
-    expect(r.reasons).toHaveLength(1);
+    expect(r.reasons).toHaveLength(2);
     expect(r.reasons[0]).toMatch(/^3 recordings today; usually ~40 by 14:00/);
+    expect(r.reasons[1]).toMatch(/^Last recording 30m ago; alert after /);
   });
 
   it('(c) quiet camera with a small usual count is not flagged for a small shortfall', () => {
@@ -82,7 +86,8 @@ describe('evaluateHealth — US1 rules', () => {
     expect(r.figures.usualCount).toBe(40);
     expect(r.figures.todayCount).toBe(15);
     expect(r.level).toBe('warn');
-    expect(r.reasons).toEqual(['15 recordings today; usually ~40 by 14:00']);
+    expect(r.reasons[0]).toBe('15 recordings today; usually ~40 by 14:00');
+    expect(r.reasons[1]).toMatch(/^Last recording /);
   });
 
   it('(e) gap longer than 1.5 × the typical longest gap → critical "No recordings for …"', () => {
@@ -90,8 +95,9 @@ describe('evaluateHealth — US1 rules', () => {
     const h = history(daily('2026-10-10', '2026-10-18', [6 * 60, 7 * 60]));
     const r = evaluateHealth(h, new Date('2026-10-20T18:00:00Z'), UTC);
     expect(r.level).toBe('critical');
-    expect(r.reasons).toHaveLength(1);
+    expect(r.reasons).toHaveLength(2);
     expect(r.reasons[0]).toMatch(/^No recordings for 2d 11h; normally at most ~23h apart$/);
+    expect(r.reasons[1]).toMatch(/recordings today; usually ~/);
     expect(r.figures.recencyThresholdMs).toBeCloseTo(1.5 * r.figures.longestGapMs, -3);
   });
 
@@ -102,7 +108,7 @@ describe('evaluateHealth — US1 rules', () => {
     );
     const r = evaluateHealth(h, NOW, UTC);
     expect(r.level).toBe('unknown');
-    expect(r.reasons).toEqual(['learning (3 of 7 days)']);
+    expect(r.reasons).toEqual(['learning (3 of 7 days)', 'Last recording 30m ago; alert after 13h']);
     expect(r.figures.completeDays).toBe(3);
     expect(r.figures.usualCount).toBeNull();
   });

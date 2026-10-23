@@ -35,7 +35,7 @@ open the status page and confirm that camera is red with a reason, while cameras
 1. **Given** a camera that usually has ~40 recordings by 14:00 and has 0 today by 14:00, **When** the admin opens
    the status page, **Then** its label is red (critical) with a reason naming today's count and the usual count.
 2. **Given** a camera recording at its normal rate, **When** the admin opens the status page, **Then** its label is
-   green (ok) with no reasons.
+   green (ok), and hovering it shows the rules it passed (time since the last recording, today's count vs usual).
 3. **Given** a camera whose newest recording ended longer ago than its normal longest gap allows, **When** the admin
    opens the status page, **Then** its label is red with a "no recordings for …" reason.
 4. **Given** a camera recording noticeably less than usual but not stopped (e.g. 15 today vs ~40 usual), **When**

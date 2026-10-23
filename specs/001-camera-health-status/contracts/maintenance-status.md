@@ -44,7 +44,7 @@ fields keep their names and meaning, so existing clients are unaffected.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `level` | `"ok" \| "warn" \| "critical" \| "unknown"` | yes | |
-| `reasons` | `string[]` | yes | `[]` when `ok`; display text, not machine-parsed |
+| `reasons` | `string[]` | yes | one line per rule that ran — problems first, then "learning", then rules that passed (e.g. `"Last recording 30m ago; alert after 13h"`); display text, not machine-parsed |
 | `evaluatedAt` | ISO-8601 string | yes | |
 | `figures` | object | yes | see [data-model.md](../data-model.md#camerahealth-computed-returned-by-api); individual values may be `null` |
 
