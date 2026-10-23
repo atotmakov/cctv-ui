@@ -9,20 +9,31 @@ const AXIS_H  = 22;
 // 1→24h, 2→12h, 4→6h, 8→3h, 24→1h, 48→30m, 96→15m, 144→10m, 288→5m, 720→2m, 1440→1m
 const ZOOM_LEVELS = [1, 2, 4, 8, 24, 48, 96, 144, 288, 720, 1440];
 
+// Recording date folders are local calendar days (the camera's time zone,
+// same as the viewer's), so the timeline spans local midnight to midnight —
+// matching the local time shown next to the play button. Using UTC here put
+// recordings just after local midnight off the left edge, cursor included.
 function dayStartMs(date) {
-  return Date.UTC(
+  return new Date(
     parseInt(date.slice(0, 4)),
     parseInt(date.slice(4, 6)) - 1,
     parseInt(date.slice(6, 8))
-  );
+  ).getTime();
 }
 
-function timeFrac(isoStr, startMs) {
-  return (new Date(isoStr).getTime() - startMs) / DAY_MS;
+function dayLengthMs(date) {
+  const start = dayStartMs(date);
+  const next  = new Date(start);
+  next.setDate(next.getDate() + 1);
+  return next.getTime() - start || DAY_MS;
 }
 
-function fracToIso(frac, startMs) {
-  return new Date(startMs + Math.max(0, Math.min(1, frac)) * DAY_MS).toISOString();
+function timeFrac(isoStr, date) {
+  return (new Date(isoStr).getTime() - dayStartMs(date)) / dayLengthMs(date);
+}
+
+function fracToIso(frac, date) {
+  return new Date(dayStartMs(date) + Math.max(0, Math.min(1, frac)) * dayLengthMs(date)).toISOString();
 }
 
 function clampPan(pan, zoom) {
@@ -55,7 +66,7 @@ export default function Timeline({ recordings, cameras, currentTime, date, onSee
   // Auto-pan to keep currentTime in view when zoom > 1
   useEffect(() => {
     if (!currentTime || !date || zoom === 1) return;
-    const frac    = timeFrac(currentTime, dayStartMs(date));
+    const frac    = timeFrac(currentTime, date);
     const visible = 1 / zoom;
     setPan(prev => {
       if (frac < prev + visible * 0.1) return clampPan(frac - visible * 0.1, zoom);
@@ -81,7 +92,6 @@ export default function Timeline({ recordings, cameras, currentTime, date, onSee
     const ctx    = canvas.getContext('2d');
     const W      = cssW;
     const barW   = W - LABEL_W;
-    const startMs = dayStartMs(date);
 
     ctx.clearRect(0, 0, W, cssH);
     ctx.fillStyle = '#111';
@@ -107,8 +117,8 @@ export default function Timeline({ recordings, cameras, currentTime, date, onSee
       ctx.fillStyle = '#3b82f6';
       for (const rec of row.recordings) {
         if (!rec.startTime || !rec.stopTime) continue;
-        const x1 = fracToX(timeFrac(rec.startTime, startMs), pan, zoom, barW);
-        const x2 = fracToX(timeFrac(rec.stopTime,  startMs), pan, zoom, barW);
+        const x1 = fracToX(timeFrac(rec.startTime, date), pan, zoom, barW);
+        const x2 = fracToX(timeFrac(rec.stopTime,  date), pan, zoom, barW);
         if (x2 < LABEL_W || x1 > W) continue; // out of visible range
         const cx1 = Math.max(x1, LABEL_W);
         const cx2 = Math.min(x2, W);
@@ -173,7 +183,7 @@ export default function Timeline({ recordings, cameras, currentTime, date, onSee
 
     // ── Current-time cursor ──────────────────────────────────────────────────
     if (currentTime) {
-      const frac = timeFrac(currentTime, startMs);
+      const frac = timeFrac(currentTime, date);
       const x    = fracToX(frac, pan, zoom, barW);
       if (x >= LABEL_W && x <= W) {
         ctx.strokeStyle = '#fff';
@@ -237,7 +247,7 @@ export default function Timeline({ recordings, cameras, currentTime, date, onSee
       panDrag.current = { startX: e.clientX, startPan: pan };
     } else {
       dragging.current = true;
-      onSeek(fracToIso(frac, dayStartMs(date)));
+      onSeek(fracToIso(frac, date));
     }
   }
 
@@ -252,7 +262,7 @@ export default function Timeline({ recordings, cameras, currentTime, date, onSee
       setPan(clampPan(panDrag.current.startPan + dfrac, zoom));
     } else if (dragging.current) {
       const frac = xToFrac(e.clientX - rect.left, pan, zoom, barW);
-      onSeek(fracToIso(frac, dayStartMs(date)));
+      onSeek(fracToIso(frac, date));
     }
   }
 
@@ -266,7 +276,7 @@ export default function Timeline({ recordings, cameras, currentTime, date, onSee
       const newZoom = ZOOM_LEVELS[Math.max(0, Math.min(ZOOM_LEVELS.length - 1, idx + dir))];
       // Keep current time centred
       if (currentTime && date) {
-        const frac = timeFrac(currentTime, dayStartMs(date));
+        const frac = timeFrac(currentTime, date);
         setPan(clampPan(frac - 1 / newZoom / 2, newZoom));
       }
       return newZoom;

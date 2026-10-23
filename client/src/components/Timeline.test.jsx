@@ -148,3 +148,17 @@ describe('Timeline — multi-camera row heights (AC-6)', () => {
     expect(container.querySelector('.timeline-wrapper')).toHaveStyle({ height: '94px' });
   });
 });
+
+// ── Local-day axis ────────────────────────────────────────────────────────────
+describe('Timeline — day follows the local calendar', () => {
+  it('a click at the start of the bar seeks to local midnight of the date', async () => {
+    const onSeek = vi.fn();
+    const { container } = render(<Timeline {...DEFAULT} onSeek={onSeek} />);
+    const canvas = container.querySelector('canvas');
+    // jsdom has no layout: give the canvas 120px of labels + a 1000px bar.
+    canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1120, height: 58 });
+    await userEvent.pointer([{ target: canvas, keys: '[MouseLeft]', coords: { clientX: 120, clientY: 20 } }]);
+    const d = new Date(onSeek.mock.calls[0][0]);
+    expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()]).toEqual([2026, 3, 6, 0, 0]);
+  });
+});

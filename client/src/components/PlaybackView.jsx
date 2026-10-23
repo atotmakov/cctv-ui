@@ -13,8 +13,10 @@ function dateInputToYMD(val) {
   return val.replace(/-/g, ''); // YYYYMMDD
 }
 
+// Local date: recording folders are local calendar days.
 function todayYMD() {
-  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function formatLocalTime(iso) {
@@ -65,9 +67,13 @@ export default function PlaybackView() {
         cameras.forEach((id, i) => { map[id] = results[i] ?? []; });
         setRecordingsMap(map);
 
-        // Auto-seek to first available recording
+        // Auto-seek to first available recording, and show the cursor there
+        // right away so it's clear where Play will start.
         const first = results.flat().sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
-        if (first) setSeekTarget(first.startTime);
+        if (first) {
+          setSeekTarget(first.startTime);
+          setDisplayTime(first.startTime);
+        }
 
         setLoading(false);
 

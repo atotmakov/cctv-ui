@@ -169,3 +169,13 @@ describe('PlaybackView — back navigation (AC-1)', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
 });
+
+// ── Cursor position before Play ───────────────────────────────────────────────
+describe('PlaybackView — initial position', () => {
+  it('shows the first recording time as soon as recordings load, before Play', async () => {
+    renderPlayback('cam-1,cam-2,cam-3');
+    const d = new Date(REC.startTime);
+    const hhmmss = [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
+    await waitFor(() => expect(document.querySelector('.time-display').textContent).toBe(`${hhmmss}.0`));
+  });
+});
