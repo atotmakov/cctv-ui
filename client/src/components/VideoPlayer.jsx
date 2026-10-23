@@ -2,12 +2,20 @@ import { useRef, useEffect, useState } from 'react';
 import { videoUrl } from '../api/client.js';
 import './VideoPlayer.css';
 
+// Cameras can start a new recording a fraction of a second before the
+// previous one stops, so two recordings may cover the same instant. Prefer the
+// one that started last: a seek to the next recording's start must land in
+// that recording, not back at the tail of the one that just ended.
 function findRecForTime(recordings, isoTime) {
   if (!isoTime) return null;
   const t = new Date(isoTime).getTime();
-  return recordings.find(r =>
-    t >= new Date(r.startTime).getTime() && t <= new Date(r.stopTime).getTime()
-  ) ?? null;
+  let best = null;
+  for (const r of recordings) {
+    const start = new Date(r.startTime).getTime();
+    if (t >= start && t <= new Date(r.stopTime).getTime() &&
+        (!best || start >= new Date(best.startTime).getTime())) best = r;
+  }
+  return best;
 }
 
 function offsetSec(rec, isoTime) {
@@ -77,7 +85,12 @@ export default function VideoPlayer({
     if (rec.token !== activeRec?.token) {
       setActiveRec(rec);           // src change → onLoadedMetadata handles seek
     } else if (videoRef.current) {
-      videoRef.current.currentTime = offsetSec(rec, seekTarget);
+      const v = videoRef.current;
+      v.currentTime = offsetSec(rec, seekTarget);
+      // Seeking an ended video leaves it paused; resume if we're playing.
+      if (playing && v.paused) {
+        v.play().catch(err => console.warn('[VideoPlayer] play() after seek failed:', err));
+      }
     }
   }, [seekTarget, recordings, activeRec]);
 

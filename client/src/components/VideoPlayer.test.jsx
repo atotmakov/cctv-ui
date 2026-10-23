@@ -94,3 +94,31 @@ describe('VideoPlayer — seek and src binding (AC-2)', () => {
     expect(videoUrl).toHaveBeenLastCalledWith('cam-1', RECS[1].videoRelPath);
   });
 });
+
+// ── Overlapping recordings (8× freeze, 23 Oct 2026) ───────────────────────────
+// Camera axis-00408CF0FE28 recorded 14:27:35.118 → 14:28:10.200 and then
+// 14:28:09.840 → 14:28:14.932. When the first ended, PlaybackView seeked to the
+// second's start, which also falls inside the first — the player rewound the
+// ended first clip instead, left it paused, and playback froze.
+describe('VideoPlayer — overlapping recordings', () => {
+  const OVERLAP = [
+    { token: 'a', startTime: '2026-10-23T11:27:35.118Z', stopTime: '2026-10-23T11:28:10.200Z', videoRelPath: 'a.mkv' },
+    { token: 'b', startTime: '2026-10-23T11:28:09.840Z', stopTime: '2026-10-23T11:28:14.932Z', videoRelPath: 'b.mkv' },
+  ];
+
+  it('a seek into the overlap loads the recording that started last', () => {
+    const { rerender } = render(<VideoPlayer {...BASE} recordings={OVERLAP} playing seekTarget="2026-10-23T11:28:00.000Z" />);
+    expect(videoUrl).toHaveBeenLastCalledWith('cam-1', 'a.mkv');
+    rerender(<VideoPlayer {...BASE} recordings={OVERLAP} playing seekTarget="2026-10-23T11:28:09.840Z" />);
+    expect(videoUrl).toHaveBeenLastCalledWith('cam-1', 'b.mkv');
+  });
+
+  it('a seek within the current recording resumes a paused video while playing', () => {
+    const play = vi.spyOn(window.HTMLMediaElement.prototype, 'play');
+    const { rerender } = render(<VideoPlayer {...BASE} playing seekTarget="2026-04-06T18:36:26.000Z" />);
+    play.mockClear();
+    rerender(<VideoPlayer {...BASE} playing seekTarget="2026-04-06T18:36:30.000Z" />);
+    expect(play).toHaveBeenCalled();
+    play.mockRestore();
+  });
+});
