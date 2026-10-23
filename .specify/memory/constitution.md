@@ -57,7 +57,7 @@ Rationale: without auth, any mutating endpoint is an unauthenticated remote dele
 - Supported playback speeds are 0.5×, 1×, 2×, 4×, 8×.
 
 Rationale: the product exists because NVR software is slow; these targets are acceptance criteria
-in `specs/000-baseline/spec.md` (AC-5), and a feature that regresses them is not done.
+in `specs/` (AC-5 in `002-camera-grid` and `003-playback-timeline`), and a feature that regresses them is not done.
 
 ### V. Degrade Gracefully, Never Crash
 
@@ -106,9 +106,9 @@ dependencies means fewer breakages and a smaller image.
 - Any change touching `server/maintenance/`, camera discovery, or the index schema MUST include
   tests covering: unmanaged cameras untouched, internal directories excluded, and dry-run writing
   nothing.
-- Acceptance criteria (`specs/000-baseline/spec.md` for baseline areas, the feature's own
-  `specs/NNN-*/spec.md` otherwise) and `CLAUDE.md` MUST be updated in the same change when a feature
-  alters user-visible behaviour or architecture; `PRD.md` when it changes a use case or scope.
+- The affected `specs/NNN-*/spec.md` (use case, acceptance criteria) and `CLAUDE.md` MUST be updated
+  in the same change when a feature alters user-visible behaviour or architecture; `PRD.md` when it
+  changes product scope, users or architecture, or adds a feature area (its §4 index).
 - Version numbers are managed by CI (patch auto-bumped on each `master` build); do not bump by hand.
 
 ## Governance

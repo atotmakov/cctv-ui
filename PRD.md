@@ -1,7 +1,7 @@
 # PRD — CCTV recording viewer
 
 ## Status: draft v0.1
-## Last updated: 2026-08-26
+## Last updated: 2026-10-24
 
 ---
 
@@ -29,25 +29,22 @@ Small businesses with on-premise CCTV systems typically rely on proprietary DVR/
 
 ---
 
-## 4. Core use cases (MVP)
+## 4. Features
 
-### UC-1 — Multi-camera grid view
-Users see a dashboard showing a thumbnail or still frame for each configured camera. Cameras are labelled (e.g. "Front door", "Car park"). Selecting a camera opens the playback view for that camera.
+Each feature — its use case, acceptance criteria and notes — is specified under `specs/`. This document keeps only
+the product context (overview, problem, users, scope, architecture).
 
-### UC-2 — Timeline / scrubbing playback
-Inside the playback view, a horizontal timeline represents available recordings for the selected camera across a chosen day. The user can scrub to any point; the video player seeks to the corresponding file and offset. Gaps in recording are shown as empty segments.
+| Area | Spec | Use cases | Acceptance criteria |
+|---|---|---|---|
+| Camera grid, app version | [`specs/002-camera-grid`](specs/002-camera-grid/spec.md) | UC-1, UC-4 | AC-1, AC-5 (grid) |
+| Playback and timeline | [`specs/003-playback-timeline`](specs/003-playback-timeline/spec.md) | UC-2 | AC-2, AC-6, AC-5 (playback) |
+| Search by date and time | [`specs/004-date-search`](specs/004-date-search/spec.md) | UC-3 | AC-3 |
+| Recording index reading | [`specs/005-recording-index`](specs/005-recording-index/spec.md) | — | AC-4 |
+| Maintenance service | [`specs/006-maintenance-service`](specs/006-maintenance-service/spec.md) | UC-5 | AC-7 |
+| Maintenance status page | [`specs/007-maintenance-status-page`](specs/007-maintenance-status-page/spec.md) | UC-6 | AC-8 |
+| Camera health label | [`specs/001-camera-health-status`](specs/001-camera-health-status/spec.md) | (part of UC-6) | FR-001…, SC-001… |
 
-### UC-3 — Search by date & time
-Users select a camera and a date (via date picker), and the app shows which time ranges have recordings. Entering a specific time jumps the timeline to that point and begins playback.
-
-### UC-4 — App version visibility
-Users (and IT admins reporting issues) can see which version of the app is currently deployed without checking server logs or files. The version is shown on the first screen (grid view) at all times.
-
-### UC-5 — Automatic retention & index maintenance
-For any camera that has no other system already managing it (detected by the absence of a native `index.db` in its folder), an out-of-band process keeps its recordings within a configured retention window and keeps them browsable: each run it deletes date-folders older than `RETENTION_DAYS`, then rebuilds a search index from a fresh filesystem/XML scan of whatever remains. A camera with its own native `index.db` is presumed to already have a live writer managing its retention/indexing, so it is left completely untouched — nothing is deleted, nothing is written. This process runs independently of the viewer app, is not reachable over HTTP, and is the only part of the system permitted to write to or delete from the share.
-
-### UC-6 — Maintenance status visibility
-IT admins can open a dedicated status page in the app to see, per camera, whether it is currently managed or unmanaged, which index file is active, and its date-folder count with oldest/newest date — computed live on every visit, never stale. The page also shows a summary of the last real maintenance run: timestamp, cameras managed, folders removed, rows written, and any per-camera errors. Each camera also gets a health label — green (ok), yellow (warn), red (critical) or grey (unknown) — derived only from its own recording history: how many recordings it has today compared with the same time on its previous 7 days, and how long since its last recording compared with its usual longest gap. Hovering or focusing the label shows the reasons in plain language. (Spec: `specs/001-camera-health-status/`.)
+New features are added with `/speckit-specify`, which creates the next `specs/NNN-<name>/`; add a row here.
 
 ---
 
@@ -89,14 +86,3 @@ IT admins can open a dedicated status page in the app to see, per camera, whethe
 
 ### 6.5 Configuration
 - SMB share path, and credentials stored in a server-side `.env` / config file — not in the database.
-
----
-
-## 7. Acceptance criteria
-
-Moved to the specs so they live next to the feature work that changes them:
-
-- **AC-1 … AC-8** (grid, playback, search, index parsing, performance, timeline, maintenance service, status page) —
-  [`specs/000-baseline/spec.md`](specs/000-baseline/spec.md). IDs are unchanged; tests still refer to them.
-- **Features specified since** — each `specs/NNN-<name>/spec.md` has its own requirements (FR-…) and success criteria
-  (SC-…), e.g. [`specs/001-camera-health-status`](specs/001-camera-health-status/spec.md).
