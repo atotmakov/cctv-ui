@@ -26,6 +26,7 @@ Inside the playback view, a horizontal timeline represents available recordings 
 - [x] Auto-advance also works when a camera starts its next recording before the previous one stops (overlaps of a fraction of a second are common — 22 across three cameras on 23 Oct 2026). Playback never freezes at such a point, at any speed including 8×; the newer recording takes over.
 - [x] Gaps in recordings are visually distinct on the timeline (grey/empty segment).
 - [x] Playback controls: play/pause, speed (0.5×, 1×, 2×, 4×, 8×).
+- [x] Camera videos show no browser control bar (play, time/duration, volume, fullscreen, ⋮ menu). Its controls act on one camera and one clip only — the seek bar and time cover the current clip, not the day, and its speed menu desyncs that camera — so the shared play/speed buttons and timeline are the only playback controls.
 
 ### AC-6 — Timeline control
 - [x] All recordings for the selected time period are represented as intervals; the position and length of each interval correspond to the recording's start time and duration.

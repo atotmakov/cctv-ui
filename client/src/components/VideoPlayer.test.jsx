@@ -86,6 +86,13 @@ describe('VideoPlayer — seek and src binding (AC-2)', () => {
     expect(container.querySelector('video')).toBeInTheDocument();
   });
 
+  it('hides the browser control bar; the shared play/speed/timeline controls drive every camera', () => {
+    const { container } = render(
+      <VideoPlayer {...BASE} seekTarget="2026-04-06T18:36:30.000Z" />,
+    );
+    expect(container.querySelector('video')).not.toHaveAttribute('controls');
+  });
+
   it('switches to the second recording when seekTarget moves there', () => {
     const { rerender } = render(
       <VideoPlayer {...BASE} seekTarget="2026-04-06T18:36:30.000Z" />,

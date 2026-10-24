@@ -168,7 +168,6 @@ export default function VideoPlayer({
           src={src}
           preload="auto"
           playsInline
-          controls
           onLoadedMetadata={handleLoadedMetadata}
           onPlay={handlePlay}
           onPause={handlePause}
