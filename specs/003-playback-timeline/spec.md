@@ -37,6 +37,7 @@ Inside the playback view, a horizontal timeline represents available recordings 
 - [x] When the play button is pressed and the current position is in a gap, playback jumps to the nearest recording to the right.
 - [x] The timeline supports zoom in / zoom out; zoomed view pans to keep the current-time cursor visible.
 - [x] During playback the current-time cursor and time display update in real time as the video progresses.
+- [x] The time display shows the browser's local time (not UTC) as `HH:MM:SS.t`, to a tenth of a second.
 - [x] In multiple-camera mode, when recordings on different cameras overlap in time, each clip plays to its end; one camera finishing its clip does not interrupt or skip another camera's clip that is still running. Playback jumps to the next recording only once no camera has footage at the current position.
 
 ### AC-5 — Performance (playback)

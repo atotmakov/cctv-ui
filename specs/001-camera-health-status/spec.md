@@ -110,7 +110,7 @@ confirm it stays green 10 h into a normal overnight gap and on a normal low-coun
 **Display**
 
 - **FR-007**: The cameras table on the maintenance status page MUST show one health label per camera — green (ok),
-  yellow (warn), red (critical), grey (unknown) — with the reasons available on hover/focus. Colour MUST NOT be the
+  yellow (warn), red (critical), grey (unknown) — with the reasons available on hover/focus for every level, ok included (the checks that passed). Colour MUST NOT be the
   only cue: the label also carries the level as text.
 - **FR-008**: No other new columns, charts, or views are added to the page.
 - **FR-009**: If health cannot be computed for a camera, the rest of that camera's row and the page MUST show
