@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('../api/client.js', () => ({
   getCameras:     vi.fn(),
@@ -99,6 +99,32 @@ describe('VideoPlayer — seek and src binding (AC-2)', () => {
     );
     rerender(<VideoPlayer {...BASE} seekTarget="2026-04-06T19:51:05.000Z" />);
     expect(videoUrl).toHaveBeenLastCalledWith('cam-1', RECS[1].videoRelPath);
+  });
+});
+
+// ── Clip ended while another camera keeps playing ─────────────────────────────
+describe('VideoPlayer — clip ended (AC-2)', () => {
+  it('shows the placeholder instead of the last frame once its clip ends', () => {
+    const { container } = render(
+      <VideoPlayer {...BASE} playing seekTarget="2026-04-06T18:36:30.000Z" />,
+    );
+    const video = container.querySelector('video');
+    expect(screen.queryByText(/no recording at this time/i)).not.toBeInTheDocument();
+    fireEvent.ended(video);
+    expect(screen.getByText(/no recording at this time/i)).toBeInTheDocument();
+    expect(video).toHaveClass('is-ended');
+  });
+
+  it('shows the video again when the next clip loads', () => {
+    const { container, rerender } = render(
+      <VideoPlayer {...BASE} playing seekTarget="2026-04-06T18:36:30.000Z" />,
+    );
+    fireEvent.ended(container.querySelector('video'));
+    rerender(<VideoPlayer {...BASE} playing seekTarget="2026-04-06T19:51:05.000Z" />);
+    const video = container.querySelector('video');
+    fireEvent.loadedMetadata(video);
+    expect(video).not.toHaveClass('is-ended');
+    expect(screen.queryByText(/no recording at this time/i)).not.toBeInTheDocument();
   });
 });
 

@@ -31,6 +31,10 @@
   object-fit: contain;
 }
 
+.video-player video.is-ended {
+  display: none;
+}
+
 .video-empty {
   display: flex;
   align-items: center;

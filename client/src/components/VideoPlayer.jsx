@@ -34,6 +34,9 @@ export default function VideoPlayer({
 }) {
   const videoRef     = useRef(null);
   const [activeRec, setActiveRec] = useState(null);
+  // The clip played to its end and nothing new has loaded: show the
+  // placeholder, not its frozen last frame (other cameras may still be playing).
+  const [ended, setEnded] = useState(false);
   const lastSeekTarget = useRef(null);
   // Used by handleLoadedMetadata when the recording was switched by the
   // auto-switch effect (not by a seekTarget). Kept separate from
@@ -87,6 +90,7 @@ export default function VideoPlayer({
     } else if (videoRef.current) {
       const v = videoRef.current;
       v.currentTime = offsetSec(rec, seekTarget);
+      setEnded(false);
       // Seeking an ended video leaves it paused; resume if we're playing.
       if (playing && v.paused) {
         v.play().catch(err => console.warn('[VideoPlayer] play() after seek failed:', err));
@@ -133,6 +137,7 @@ export default function VideoPlayer({
     // autoLoadTarget is set by the auto-switch path; consume it once.
     const target = autoLoadTarget.current ?? lastSeekTarget.current;
     autoLoadTarget.current = null;
+    setEnded(false);
     v.currentTime = target ? offsetSec(activeRec, target) : 0;
     v.playbackRate = speed;
     if (playing) {
@@ -143,12 +148,13 @@ export default function VideoPlayer({
   // ── Video events drive the rAF loop ──────────────────────────────────────
   // onPlay  → video actually started playing in the browser → start rAF
   // onPause → video actually paused in the browser         → stop rAF
-  function handlePlay()  { startRaf(); }
+  function handlePlay()  { setEnded(false); startRaf(); }
   function handlePause() { stopRaf();  }
 
   // ── Recording ended — let PlaybackView decide what comes next ────────────
   function handleEnded() {
     stopRaf();
+    setEnded(true);
     onPlayEnd?.();
   }
 
@@ -162,18 +168,20 @@ export default function VideoPlayer({
   return (
     <div className="video-player">
       <div className="video-label">{cameraId}</div>
-      {src ? (
+      {src && (
         <video
           ref={videoRef}
           src={src}
           preload="auto"
           playsInline
+          className={ended ? 'is-ended' : undefined}
           onLoadedMetadata={handleLoadedMetadata}
           onPlay={handlePlay}
           onPause={handlePause}
           onEnded={handleEnded}
         />
-      ) : (
+      )}
+      {(!src || ended) && (
         <div className="video-empty">
           {recordings.length === 0
             ? 'No recordings for this date'

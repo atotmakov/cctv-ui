@@ -27,6 +27,7 @@ Inside the playback view, a horizontal timeline represents available recordings 
 - [x] Gaps in recordings are visually distinct on the timeline (grey/empty segment).
 - [x] Playback controls: play/pause, speed (0.5×, 1×, 2×, 4×, 8×).
 - [x] Camera videos show no browser control bar (play, time/duration, volume, fullscreen, ⋮ menu). Its controls act on one camera and one clip only — the seek bar and time cover the current clip, not the day, and its speed menu desyncs that camera — so the shared play/speed buttons and timeline are the only playback controls.
+- [x] In multiple-camera mode, a camera whose clip has ended while other cameras keep playing shows the "No recording at this time" placeholder, not the clip's frozen last frame, until playback reaches its next recording.
 
 ### AC-6 — Timeline control
 - [x] All recordings for the selected time period are represented as intervals; the position and length of each interval correspond to the recording's start time and duration.
