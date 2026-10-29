@@ -8,8 +8,11 @@
  * See specs/001-camera-health-status/data-model.md for the full rules.
  */
 
+import { existsSync } from 'fs';
 import config from '../config.js';
 import { getRecordingHistory } from './dbService.js';
+import { dbPath, listDates } from './storageService.js';
+import { scanRecordingsForDate } from './xmlService.js';
 
 const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
@@ -72,6 +75,12 @@ export function startOfLocalDay(ms, timeZone, dayOffset = 0) {
   const wall = Date.UTC(p.year, p.month - 1, p.day + dayOffset);
   const guess = wall - tzOffsetMs(wall, timeZone);
   return wall - tzOffsetMs(guess, timeZone);
+}
+
+// YYYYMMDD of the local calendar day containing `ms` (the date-folder format).
+function localDateFolder(ms, timeZone) {
+  const p = localParts(ms, timeZone);
+  return `${p.year}${String(p.month).padStart(2, '0')}${String(p.day).padStart(2, '0')}`;
 }
 
 function localTimeOfDay(ms, timeZone) {
@@ -223,10 +232,39 @@ export function clearHealthCache() {
   cache.clear();
 }
 
+// A managed camera's index_[managed].db is only rebuilt hourly, but its
+// recordings can land on the share at any time — the S3 sync delivers a
+// backlog of days in one burst — and playback scans the folders live. So
+// re-scan the date folders from the index's newest recording on and merge
+// them in; otherwise health reports a multi-day outage for up to an hour
+// while playback already shows today's footage. A native index.db is kept
+// live by the camera itself and needs none of this.
+async function withLiveTail(cameraId, history, sinceIso, timeZone) {
+  if (!history || existsSync(dbPath(cameraId))) return history;
+
+  const lastStart = Date.parse(history.recordings.at(-1)?.startTime);
+  const fromMs = Number.isNaN(lastStart) ? Date.parse(sinceIso) : lastStart;
+  // One day earlier tolerates the camera's folder time zone differing from
+  // HEALTH_TIMEZONE.
+  const fromDate = localDateFolder(fromMs - DAY, timeZone);
+  const dates = (await listDates(cameraId)).filter(d => d >= fromDate);
+  if (dates.length === 0) return history;
+
+  const byStart = new Map(history.recordings.map(r => [r.startTime, r]));
+  for (const date of dates) {
+    for (const rec of await scanRecordingsForDate(cameraId, date)) {
+      if (!rec.startTime || rec.startTime < sinceIso) continue;
+      byStart.set(rec.startTime, { startTime: rec.startTime, stopTime: rec.stopTime ?? null });
+    }
+  }
+  const recordings = [...byStart.values()].sort((a, b) => a.startTime.localeCompare(b.startTime));
+  return { earliestStart: history.earliestStart ?? recordings[0]?.startTime ?? null, recordings };
+}
+
 // Never throws: an unexpected error is logged and reported as null (the
 // client shows it as unknown), and is cached like any other result so a
 // broken index logs at most once per TTL.
-export function getCameraHealth(cameraId, now = new Date()) {
+export async function getCameraHealth(cameraId, now = new Date()) {
   const nowMs = now.getTime();
   const hit = cache.get(cameraId);
   if (hit && nowMs - hit.at < HEALTH_THRESHOLDS.cacheTtlMs) return hit.value;
@@ -235,7 +273,8 @@ export function getCameraHealth(cameraId, now = new Date()) {
   try {
     const timeZone = config.healthTimeZone;
     const sinceIso = new Date(startOfLocalDay(nowMs, timeZone, -HEALTH_THRESHOLDS.baselineDays)).toISOString();
-    value = evaluateHealth(getRecordingHistory(cameraId, sinceIso), nowMs, { timeZone });
+    const history = await withLiveTail(cameraId, getRecordingHistory(cameraId, sinceIso), sinceIso, timeZone);
+    value = evaluateHealth(history, nowMs, { timeZone });
   } catch (err) {
     console.warn(`[healthService] health evaluation failed for ${cameraId}: ${err.message}`);
     value = null;

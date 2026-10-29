@@ -65,7 +65,7 @@ export async function getCameraStatuses() {
       heartbeat: await readCameraHeartbeat(camera.id),
       // Never throws (null on unexpected error), so one camera can't reject
       // the whole Promise.all.
-      health: getCameraHealth(camera.id),
+      health: await getCameraHealth(camera.id),
     };
   }));
 }

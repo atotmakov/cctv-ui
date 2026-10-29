@@ -1,6 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
-import { evaluateHealth, worstLevel, HEALTH_THRESHOLDS } from '../services/healthService.js';
+import { describe, it, expect, afterEach } from 'vitest';
+import { readFileSync, promises as fs } from 'fs';
+import path from 'path';
+import { evaluateHealth, worstLevel, HEALTH_THRESHOLDS, getCameraHealth, clearHealthCache } from '../services/healthService.js';
+import { cameraPath, managedDbPath } from '../services/storageService.js';
+import { closeDb } from '../services/dbService.js';
+
+const { DatabaseSync } = process.getBuiltinModule('node:sqlite');
 
 const HOUR = 60 * 60 * 1000;
 const MIN = 60 * 1000;
@@ -317,5 +322,51 @@ describe('evaluateHealth — replay of the October 2026 incident', () => {
     }
     console.log(`[SC-003] ${days} days × ${HEALTHY.length} cameras, false-alarm days: ${falseDays.size}`, [...falseDays]);
     expect(falseDays.size).toBe(0);
+  });
+});
+
+describe('getCameraHealth on a managed camera', () => {
+  let camId = null;
+
+  afterEach(async () => {
+    clearHealthCache();
+    if (!camId) return;
+    closeDb(camId);
+    await fs.rm(cameraPath(camId), { recursive: true, force: true });
+    camId = null;
+  });
+
+  // Oct 2026: the S3 sync delivered ~2 days of recordings in one burst; for
+  // the rest of the hour, until the next index rebuild, health said
+  // "No recordings for 2d" while playback (a live folder scan) showed today.
+  it('counts recordings that reached the share after the last index rebuild', async () => {
+    const now = new Date();
+    const nowMs = now.getTime();
+    camId = `tmp-health-${nowMs}-${Math.random().toString(36).slice(2)}`;
+    await fs.mkdir(cameraPath(camId), { recursive: true });
+
+    // Index as last rebuilt: a recording every hour for 10 days, ending 2 days ago.
+    const db = new DatabaseSync(managedDbPath(camId));
+    db.exec('CREATE TABLE cctv_maintenance_index (RecordingToken TEXT PRIMARY KEY, StartTime TEXT, StopTime TEXT)');
+    const insert = db.prepare('INSERT INTO cctv_maintenance_index VALUES (?, ?, ?)');
+    for (let t = nowMs - 12 * 24 * HOUR; t < nowMs - 2 * 24 * HOUR; t += HOUR) {
+      insert.run(`tok-${t}`, new Date(t).toISOString(), new Date(t + 60_000).toISOString());
+    }
+    db.close();
+
+    // A recording that has since landed on the share (test time zone is UTC).
+    const start = new Date(nowMs - 10 * 60_000);
+    const date = start.toISOString().slice(0, 10).replace(/-/g, '');
+    const hour = start.toISOString().slice(11, 13);
+    const token = `${date}_${hour}0000_LIVE`;
+    const dir = path.join(cameraPath(camId), date, hour, token);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, 'recording.xml'),
+      `<Recording RecordingToken="${token}"><StartTime>${start.toISOString()}</StartTime>` +
+      `<StopTime>${new Date(start.getTime() + 60_000).toISOString()}</StopTime></Recording>`);
+
+    const health = await getCameraHealth(camId, now);
+    expect(health.reasons[0]).not.toMatch(/No recordings for/);
+    expect(health.figures.lastRecordingEnd).toBe(new Date(start.getTime() + 60_000).toISOString());
   });
 });
